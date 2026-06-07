@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { ClipboardCheck, CheckCircle2 } from "lucide-react";
+import { ClipboardCheck, CheckCircle2, Loader2 } from "lucide-react";
 import { ToolShell } from "./ToolShell";
+import { post } from "../lib/api";
 
 const SERVICES = [
   "Terrace / Roof",
@@ -18,6 +19,8 @@ const label = "mb-1.5 block text-xs font-semibold uppercase tracking-wider text-
 
 export function BookVisit() {
   const [done, setDone] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -25,6 +28,7 @@ export function BookVisit() {
     service: SERVICES[0] as string,
     date: "",
     notes: "",
+    company: "", // honeypot — hidden, bots fill it
   });
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
@@ -32,11 +36,28 @@ export function BookVisit() {
 
   const valid = form.name.trim() && /^\d{10}$/.test(form.phone.replace(/\D/g, ""));
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!valid) return;
-    // Booking endpoint lands with the CRM build (Phase 6). Capture + confirm for now.
-    setDone(true);
+    if (!valid || loading) return;
+    setError("");
+    setLoading(true);
+    try {
+      const notes = [form.area && `Area: ${form.area}`, form.notes].filter(Boolean).join(" · ");
+      await post("/api/leads", {
+        name: form.name.trim(),
+        phone: form.phone.replace(/\D/g, ""),
+        service: form.service,
+        preferredDate: form.date || undefined,
+        notes: notes || undefined,
+        source: "booking_site_visit",
+        honeypot: form.company || undefined,
+      });
+      setDone(true);
+    } catch (err) {
+      setError((err as Error).message || "Something went wrong. Try again or call us.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   if (done) {
@@ -104,13 +125,30 @@ export function BookVisit() {
           <label className={label}>Notes (optional)</label>
           <textarea className={field} rows={3} value={form.notes} onChange={set("notes")} placeholder="Describe the problem — leak location, how long, etc." />
         </div>
+        {/* honeypot — visually hidden, real users never fill it */}
+        <input
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          aria-hidden="true"
+          value={form.company}
+          onChange={set("company")}
+          className="absolute left-[-9999px] h-0 w-0 opacity-0"
+        />
         <div className="sm:col-span-2">
+          {error && <p className="mb-3 text-center text-sm font-semibold text-rose-300">{error}</p>}
           <button
             type="submit"
-            disabled={!valid}
-            className="inline-flex w-full items-center justify-center rounded-2xl bg-[#002bfa] px-7 py-3.5 text-sm font-bold text-white transition-colors hover:bg-[#1d44ff] disabled:cursor-not-allowed disabled:opacity-40"
+            disabled={!valid || loading}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#002bfa] px-7 py-3.5 text-sm font-bold text-white transition-colors hover:bg-[#1d44ff] disabled:cursor-not-allowed disabled:opacity-40"
           >
-            Book free inspection
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" /> Booking…
+              </>
+            ) : (
+              "Book free inspection"
+            )}
           </button>
           <p className="mt-3 text-center text-xs text-white/40">
             No spam. We only message you about this inspection.

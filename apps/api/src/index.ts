@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { pricingRoutes } from "./routes/pricing";
 import { authRoutes } from "./auth/routes";
+import { leadRoutes } from "./routes/leads";
 
 const app = new Hono();
 
@@ -12,6 +13,7 @@ app.get("/health", (c) => c.json({ ok: true, service: "wpx-api", ts: Date.now() 
 
 app.route("/api/auth", authRoutes);
 app.route("/api/pricing", pricingRoutes);
+app.route("/api/leads", leadRoutes);
 
 const port = Number(process.env.PORT ?? 8787);
 serve({ fetch: app.fetch, port }, (info) => {
