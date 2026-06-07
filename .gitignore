@@ -13,3 +13,4 @@ coverage/
 drizzle/.cache/
 uploads/
 .claude/
+deploy/

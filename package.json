@@ -13,6 +13,7 @@
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
+    "build:deploy": "npm run build -w @wpx/marketing && npm run build -w @wpx/web && node scripts/assemble-deploy.mjs",
     "dev:api": "npm run dev -w @wpx/api",
     "dev:web": "npm run dev -w @wpx/web",
     "dev:marketing": "npm run dev -w @wpx/marketing",
