@@ -6,7 +6,7 @@ import { generateOtp, hashOtp, OTP_TTL_MS, OTP_MAX_ATTEMPTS } from "./otp";
 import { guardOtpSend, verifyTurnstile, isDisposableEmail } from "./antispam";
 import { signVerified, signSession } from "./jwt";
 import { setVerifiedCookie, setSessionCookie, clearAuthCookies } from "./cookies";
-import { getWhatsApp } from "./whatsapp";
+import { getOtpProvider } from "./whatsapp";
 import { clientIp, deviceId, getSession, getVerified } from "./guards";
 import * as repo from "./repo";
 
@@ -56,7 +56,7 @@ authRoutes.post("/otp/send", async (c) => {
     return c.json({ error: decision.code, reason: decision.reason }, 429);
   }
 
-  const wa = getWhatsApp();
+  const wa = getOtpProvider();
   if (!(await wa.hasWhatsApp(e164))) {
     await repo.logOtp("blocked", phoneHash, ip, dev);
     return c.json({ error: "no_whatsapp", reason: "This number has no WhatsApp." }, 400);
