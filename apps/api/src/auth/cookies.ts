@@ -5,14 +5,21 @@ import { VERIFIED_DAYS, SESSION_DAYS } from "./jwt";
 export const VERIFIED_COOKIE = "wpx_verified";
 export const SESSION_COOKIE = "wpx_session";
 
-const base = () =>
-  ({
+const base = () => {
+  const prod = process.env.NODE_ENV === "production";
+  // Cross-origin SPA (different subdomain) needs SameSite=None; Secure to send cookies.
+  // Same-origin deploy can override with COOKIE_SAMESITE=Lax.
+  const sameSite =
+    (process.env.COOKIE_SAMESITE as "Lax" | "None" | "Strict") ||
+    (prod ? "None" : "Lax");
+  return {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "Lax" as const,
+    secure: prod || sameSite === "None",
+    sameSite,
     path: "/",
     domain: process.env.COOKIE_DOMAIN || undefined,
-  });
+  } as const;
+};
 
 export function setVerifiedCookie(c: Context, token: string) {
   setCookie(c, VERIFIED_COOKIE, token, { ...base(), maxAge: VERIFIED_DAYS * 86400 });
