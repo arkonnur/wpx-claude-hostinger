@@ -1,0 +1,31 @@
+---
+import "../styles/global.css";
+interface Props {
+  title: string;
+  description: string;
+  canonical?: string;
+  jsonLd?: object[];
+}
+const { title, description, canonical = Astro.url.href, jsonLd = [] } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta name="robots" content="index,follow" />
+    {jsonLd.map((j) => (
+      <script type="application/ld+json" set:html={JSON.stringify(j)} />
+    ))}
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

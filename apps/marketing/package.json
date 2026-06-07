@@ -1,0 +1,28 @@
+{
+  "name": "@wpx/marketing",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev --port 4321",
+    "build": "astro build",
+    "preview": "astro preview",
+    "typecheck": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/react": "^4.1.2",
+    "@tailwindcss/vite": "^4.0.0",
+    "@wpx/core": "*",
+    "astro": "^5.1.1",
+    "gsap": "^3.12.5",
+    "motion": "^12.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwindcss": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "typescript": "^5.8.3"
+  }
+}

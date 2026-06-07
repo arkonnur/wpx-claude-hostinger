@@ -1,0 +1,16 @@
+# WaterProofX
+
+> AI-backed waterproofing service in Bangalore, India. Terrace, bathroom, wall,
+> basement, swimming pool and water tank leak repair with certified application
+> and a brand-backed 5–15 year warranty.
+
+## Facts
+- Service area: Bangalore (Koramangala, Whitefield, HSR, Indiranagar, Jayanagar, and all localities).
+- Services: terrace/roof waterproofing, bathroom/wet-area waterproofing, exterior wall dampness, basement, water tank, swimming pool.
+- Indicative cost: terrace ₹55–₹120/sqft; bathroom ₹90–₹160/sqft (severity/system dependent).
+- Free instant online cost calculator; free on-site engineering inspection for exact quote.
+- Guarantee: lowest price (matches genuine written quotations) + highest quality; brand-backed warranty card.
+
+## Key pages
+- / : home + free cost calculator
+- /app : tools + customer dashboard

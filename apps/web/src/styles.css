@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+:root {
+  --wpx-blue: #002bfa;
+  --wpx-accent: #3b82f6;
+  --wpx-dark: #020617;
+  --wpx-card: #0b1530;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+body {
+  margin: 0;
+  background: var(--wpx-dark);
+  color: #fff;
+  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+}

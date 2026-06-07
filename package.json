@@ -1,0 +1,25 @@
+{
+  "name": "waterproofx-superapp",
+  "private": true,
+  "version": "0.1.0",
+  "description": "WaterProofX — website + webapp + CRM + CMS super-app (multi-tenant waterproofing lead-gen platform)",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "dev:api": "npm run dev -w @wpx/api",
+    "dev:web": "npm run dev -w @wpx/web",
+    "dev:marketing": "npm run dev -w @wpx/marketing",
+    "test": "npm run test --workspaces --if-present",
+    "db:generate": "npm run generate -w @wpx/db",
+    "db:migrate": "npm run migrate -w @wpx/db",
+    "db:seed": "npm run seed -w @wpx/db",
+    "typecheck": "tsc -b"
+  }
+}

@@ -1,0 +1,361 @@
+---
+import Base from "../layouts/Base.astro";
+import HeroWater from "../components/landing/HeroWater.tsx";
+import ToolCards from "../components/landing/ToolCards.tsx";
+import LayerStack from "../components/landing/LayerStack.tsx";
+import RiskAreas from "../components/landing/RiskAreas.tsx";
+import BeforeAfter from "../components/landing/BeforeAfter.tsx";
+import ProcessTimeline from "../components/landing/ProcessTimeline.tsx";
+import Testimonials from "../components/landing/Testimonials.tsx";
+import Comparison from "../components/landing/Comparison.tsx";
+import {
+  BRAND,
+  SERVICES_DETAIL,
+  WHY_WPX,
+  STATS,
+  AREAS,
+  FAQS,
+  AI_FEATURES,
+  AI_BULLETS,
+} from "../data/landing";
+
+const title = "Waterproofing Services in Bangalore | WaterProofX";
+const description =
+  "Bangalore's AI-backed waterproofing experts for terrace, bathroom, swimming pool, water tank, exterior wall & dampness treatment. Free instant cost calculator + AI photo diagnosis + on-site engineering inspection. 10-year warranty, lowest-price guarantee.";
+
+// SEO + AEO structured data — LocalBusiness + FAQPage (AI engines quote these).
+const jsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    name: BRAND.name,
+    description,
+    url: "https://waterproofx.in",
+    telephone: BRAND.phone,
+    email: BRAND.email,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: "100ft Road, Indiranagar",
+      addressLocality: "Bengaluru",
+      addressRegion: "KA",
+      postalCode: "560038",
+      addressCountry: "IN",
+    },
+    areaServed: AREAS.map((a) => a.name + ", Bangalore"),
+    priceRange: "₹₹",
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: BRAND.rating,
+      reviewCount: BRAND.reviewCount,
+    },
+    knowsAbout: [
+      "terrace waterproofing",
+      "bathroom waterproofing",
+      "swimming pool waterproofing",
+      "water tank waterproofing",
+      "exterior wall waterproofing",
+      "dampness treatment",
+    ],
+    hasOfferCatalog: {
+      "@type": "OfferCatalog",
+      name: "Waterproofing Services",
+      itemListElement: SERVICES_DETAIL.map((s) => ({
+        "@type": "Offer",
+        itemOffered: { "@type": "Service", name: s.title },
+      })),
+    },
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: FAQS.map((f) => ({
+      "@type": "Question",
+      name: f.q,
+      acceptedAnswer: { "@type": "Answer", text: f.a },
+    })),
+  },
+];
+
+const navLinks = [
+  { href: "#tools", label: "Tools" },
+  { href: "#services", label: "Services" },
+  { href: "#work", label: "Our Work" },
+  { href: "#compare", label: "Compare" },
+  { href: "#process", label: "Process" },
+  { href: "#faq", label: "FAQ" },
+  { href: "#contact", label: "Contact" },
+];
+---
+
+<Base title={title} description={description} jsonLd={jsonLd}>
+  <!-- Header -->
+  <header
+    class="sticky top-0 z-50 border-b border-white/10 backdrop-blur-md"
+    style="background:rgba(2,6,23,0.72)"
+  >
+    <div class="mx-auto flex max-w-6xl items-center gap-6 px-6 py-4">
+      <a href="/" class="text-lg font-black tracking-tight">
+        Water<span style="color:var(--wpx-accent)">ProofX</span>
+      </a>
+      <nav class="ml-auto hidden items-center gap-6 text-sm text-white/60 md:flex">
+        {navLinks.map((l) => (
+          <a href={l.href} class="transition-colors hover:text-white">{l.label}</a>
+        ))}
+      </nav>
+      <a
+        href={`tel:${BRAND.phone.replace(/\s/g, "")}`}
+        class="hidden text-sm font-semibold text-white/80 hover:text-white sm:inline"
+      >
+        {BRAND.phone}
+      </a>
+      <a
+        href="/app"
+        class="rounded-xl bg-[#002bfa] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[#1d44ff]"
+      >
+        Open app
+      </a>
+    </div>
+  </header>
+
+  <!-- 1. Hero (cinematic, above-fold) -->
+  <HeroWater client:load />
+
+  <!-- 2. Tool navigation cards -->
+  <ToolCards client:visible />
+
+  <!-- 3. Services -->
+  <section id="services" class="px-6 py-20" style="background:#020617">
+    <div class="mx-auto max-w-6xl">
+      <div class="max-w-2xl">
+        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-[#60a5fa]">
+          What we waterproof
+        </p>
+        <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+          Specialist systems for every surface
+        </h2>
+        <p class="mt-3 text-base leading-relaxed text-white/55">
+          System-engineered waterproofing — each backed by a written 10-year warranty.
+        </p>
+      </div>
+      <div class="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {SERVICES_DETAIL.map((s) => (
+          <div class="group flex h-full flex-col rounded-3xl border border-white/10 bg-white/[0.03] p-7 transition-all hover:-translate-y-1 hover:border-white/25">
+            <h3 class="text-xl font-bold text-white">{s.title}</h3>
+            <p class="mt-1 text-sm font-semibold text-[#60a5fa]">{s.short}</p>
+            <p class="mt-3 flex-1 text-sm leading-relaxed text-white/55">{s.description}</p>
+            <ul class="mt-4 space-y-1.5">
+              {s.bullets.slice(0, 4).map((b) => (
+                <li class="flex items-center gap-2 text-xs text-white/60">
+                  <span class="text-[#60a5fa]">✓</span> {b}
+                </li>
+              ))}
+            </ul>
+            <div class="mt-5 flex items-center justify-between border-t border-white/10 pt-4">
+              <span class="text-sm font-bold text-[#60a5fa]">{s.priceRange}</span>
+              <a href="/app/calculator" class="text-sm font-semibold text-white/70 hover:text-white">
+                Calculate →
+              </a>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. AI photo-diagnosis magnet -->
+  <section class="px-6 py-20" style="background:linear-gradient(180deg,#020617,#0b1530,#020617)">
+    <div class="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-2">
+      <div>
+        <span class="inline-flex items-center gap-2 rounded-full border border-[#002bfa]/30 bg-[#002bfa]/10 px-3 py-1.5 text-xs font-semibold text-[#60a5fa]">
+          ⚡ New · AI-Powered
+        </span>
+        <h2 class="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
+          Done waterproofing 3–4 times but still leaking?
+        </h2>
+        <p class="mt-4 text-base leading-relaxed text-white/60">
+          Upload a photo of your dampness or terrace. Our AI analyses building age,
+          previous treatments, leakage patterns and the image to identify the
+          <strong class="text-white"> exact root cause</strong> — not just the symptom.
+        </p>
+        <ul class="mt-6 space-y-3">
+          {AI_BULLETS.map((b) => (
+            <li class="flex items-start gap-2 text-sm text-white/65">
+              <span class="mt-0.5 text-[#60a5fa]">✓</span> {b}
+            </li>
+          ))}
+        </ul>
+        <a
+          href="/app/diagnose"
+          class="mt-8 inline-flex items-center gap-2 rounded-2xl bg-[#002bfa] px-7 py-3.5 text-sm font-bold text-white transition-colors hover:bg-[#1d44ff]"
+        >
+          Start free AI diagnosis →
+        </a>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        {AI_FEATURES.map((f) => (
+          <div class="rounded-3xl border border-white/10 bg-white/[0.03] p-5 text-center">
+            <h4 class="text-sm font-bold text-white">{f.title}</h4>
+            <p class="mt-1 text-xs leading-relaxed text-white/50">{f.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. The science / about (interactive layer stack) -->
+  <LayerStack client:visible />
+
+  <!-- 6. Risk areas -->
+  <RiskAreas client:visible />
+
+  <!-- 7. Before / after -->
+  <BeforeAfter client:visible />
+
+  <!-- 8. Process -->
+  <div id="process">
+    <ProcessTimeline client:visible />
+  </div>
+
+  <!-- 9. Why WaterProofX -->
+  <section class="px-6 py-20" style="background:#020617">
+    <div class="mx-auto max-w-6xl">
+      <div class="max-w-2xl">
+        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-[#60a5fa]">
+          Why WaterProofX
+        </p>
+        <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+          Why a specialist beats a local applicator
+        </h2>
+        <p class="mt-3 text-base leading-relaxed text-white/55">
+          15+ years of engineering expertise plus AI — solutions that actually last.
+        </p>
+      </div>
+      <div class="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {WHY_WPX.map((w) => (
+          <div class="rounded-3xl border border-white/10 bg-white/[0.03] p-7">
+            <h3 class="text-lg font-bold text-white">{w.title}</h3>
+            <p class="mt-2 text-sm leading-relaxed text-white/55">{w.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- 9b. WaterProofX vs others -->
+  <Comparison client:visible />
+
+  <!-- 10. Stats band -->
+  <section class="border-y border-white/10 px-6 py-14" style="background:#0b1530">
+    <div class="mx-auto grid max-w-6xl grid-cols-2 gap-8 md:grid-cols-4">
+      {STATS.map((s) => (
+        <div class="text-center">
+          <div class="text-3xl font-black text-white md:text-4xl" style="color:var(--wpx-accent)">
+            {s.value}
+          </div>
+          <div class="mt-1 text-sm font-medium text-white/50">{s.label}</div>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- 11. Testimonials -->
+  <Testimonials client:visible />
+
+  <!-- 12. Bangalore service areas (local SEO) -->
+  <section class="px-6 py-20" style="background:#020617">
+    <div class="mx-auto max-w-6xl">
+      <div class="max-w-2xl">
+        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-[#60a5fa]">
+          Service areas
+        </p>
+        <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+          Waterproofing across Bangalore
+        </h2>
+        <p class="mt-3 text-base leading-relaxed text-white/55">
+          Same-week free inspection in every major locality.
+        </p>
+      </div>
+      <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {AREAS.map((a) => (
+          <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <h3 class="text-sm font-bold text-white">{a.name}</h3>
+            <p class="mt-1 text-xs leading-relaxed text-white/45">{a.blurb}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- 13. FAQ -->
+  <section id="faq" class="px-6 py-20" style="background:#020617">
+    <div class="mx-auto max-w-3xl">
+      <div class="text-center">
+        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-[#60a5fa]">FAQ</p>
+        <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+          Waterproofing in Bangalore — answered
+        </h2>
+      </div>
+      <div class="mt-10 space-y-3">
+        {FAQS.map((f, i) => (
+          <details
+            class="group overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]"
+            open={i === 0}
+          >
+            <summary class="flex cursor-pointer items-center justify-between gap-4 px-5 py-4 font-semibold text-white marker:content-['']">
+              {f.q}
+              <span class="text-[#60a5fa] transition-transform group-open:rotate-45">+</span>
+            </summary>
+            <p class="px-5 pb-5 text-sm leading-relaxed text-white/55">{f.a}</p>
+          </details>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- 14. Contact / final CTA -->
+  <section
+    id="contact"
+    class="px-6 py-20"
+    style="background:linear-gradient(180deg,#0b1530,#020617)"
+  >
+    <div class="mx-auto max-w-4xl text-center">
+      <h2 class="text-3xl font-black tracking-tight sm:text-4xl">
+        Ready to stop the leak for good?
+      </h2>
+      <p class="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-white/60">
+        Free AI diagnosis, instant estimate, or talk to a waterproofing engineer.
+        Lowest-price guarantee, 10-year warranty.
+      </p>
+      <div class="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+        <a
+          href="/app/diagnose"
+          class="inline-flex items-center gap-2 rounded-2xl bg-[#002bfa] px-8 py-4 text-base font-bold text-white transition-colors hover:bg-[#1d44ff]"
+        >
+          Free AI analysis →
+        </a>
+        <a
+          href={`https://wa.me/${BRAND.whatsapp}`}
+          class="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-8 py-4 text-base font-semibold text-white transition-colors hover:bg-white/10"
+        >
+          Chat on WhatsApp
+        </a>
+      </div>
+      <div class="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-white/50">
+        <a href={`tel:${BRAND.phone.replace(/\s/g, "")}`} class="hover:text-white">{BRAND.phone}</a>
+        <a href={`mailto:${BRAND.email}`} class="hover:text-white">{BRAND.email}</a>
+        <span>{BRAND.address}</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-white/10 px-6 py-10" style="background:#020617">
+    <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 text-sm text-white/40 sm:flex-row">
+      <span class="font-black text-white/70">
+        Water<span style="color:var(--wpx-accent)">ProofX</span>
+        <span class="ml-2 font-normal text-white/40">· {BRAND.slogan} {BRAND.positioning}</span>
+      </span>
+      <span>© 2026 WaterProofX · Waterproofing services in {BRAND.city}</span>
+    </div>
+  </footer>
+</Base>
