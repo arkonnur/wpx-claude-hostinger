@@ -1,22 +1,27 @@
-// Smart auth flow. One OTP ever per number; returning numbers route to login.
-// Steps: phone → (otp | login | set_password) → verify/register → done.
+// Tabbed auth. Sign in = email+password (one-time OTP step-up on new device).
+// Create account = email+password+confirm+mobile → OTP verify → register.
+// Phone stays the security/identity anchor (contacts keyed by phoneHash).
 import { useRef, useState } from "react";
 import { X, Loader2, ShieldCheck } from "lucide-react";
 import { ApiError } from "../lib/api";
-import { checkPhone, sendOtp, verifyOtp, register, login, type CheckRoute } from "../lib/auth";
+import { sendOtp, verifyOtp, register, login } from "../lib/auth";
 import { useSession } from "../lib/session";
 
-type Step = "phone" | "otp" | "register" | "login" | "done";
+type Mode = "signin" | "signup";
+type Sub = "form" | "otp";
 
 export function AuthDialog({ onClose }: { onClose: () => void }) {
   const { refresh } = useSession();
-  const [step, setStep] = useState<Step>("phone");
-  const [route, setRoute] = useState<CheckRoute>("otp");
-  const [phone, setPhone] = useState("");
-  const [code, setCode] = useState("");
+  const [mode, setMode] = useState<Mode>("signin");
+  const [sub, setSub] = useState<Sub>("form");
+
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [phone, setPhone] = useState("");
+  const [code, setCode] = useState("");
+
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const honeypot = useRef("");
@@ -34,62 +39,73 @@ export function AuthDialog({ onClose }: { onClose: () => void }) {
     }
   };
 
-  const startPhone = () =>
+  const finish = async () => {
+    await refresh();
+    onClose();
+  };
+
+  // ---- Sign in ----
+  const submitSignin = () =>
     run(async () => {
-      const { route } = await checkPhone(phone);
-      setRoute(route);
-      if (route === "login") {
-        setStep("login");
-      } else {
-        await sendOtp(phone, { honeypot: honeypot.current, formFillMs: Date.now() - renderedAt.current });
-        setStep("otp");
+      if (!email || !password) throw new Error("Enter email and password.");
+      const res = await login(email, password);
+      if (res.needs_otp) {
+        // New device / expired trust → one-time OTP step-up.
+        const p = res.phone ?? phone;
+        setPhone(p);
+        await sendOtp(p, { formFillMs: 9999 });
+        setSub("otp");
+        return;
       }
+      await finish();
     });
 
-  const submitOtp = () =>
+  const submitSigninOtp = () =>
+    run(async () => {
+      await verifyOtp(phone, code);
+      // verified cookie now set for this phone → retry login, no more step-up.
+      const res = await login(email, password);
+      if (res.needs_otp) throw new Error("Verification failed — try again.");
+      await finish();
+    });
+
+  // ---- Create account ----
+  const submitSignup = () =>
+    run(async () => {
+      if (!email) throw new Error("Enter your email.");
+      if (password.length < 8) throw new Error("Password must be at least 8 characters.");
+      if (password !== confirm) throw new Error("Passwords do not match.");
+      if (!phone) throw new Error("Enter your mobile number.");
+      await sendOtp(phone, { honeypot: honeypot.current, formFillMs: Date.now() - renderedAt.current });
+      setSub("otp");
+    });
+
+  const submitSignupOtp = () =>
     run(async () => {
       const { hasAccount } = await verifyOtp(phone, code);
       if (hasAccount) {
-        // verified but account exists → just log in with password
-        setStep("login");
-      } else {
-        setStep("register");
-      }
-    });
-
-  const submitRegister = () =>
-    run(async () => {
-      await register({ phone, email, password, name });
-      await refresh();
-      setStep("done");
-      onClose();
-    });
-
-  const submitLogin = () =>
-    run(async () => {
-      const res = await login(email, password);
-      if (res.needs_otp) {
-        // step-up: send OTP for this phone, then user re-submits login after verify
-        await sendOtp(res.phone ?? phone, { formFillMs: 9999 });
-        setPhone(res.phone ?? phone);
-        setRoute("login");
-        setStep("otp");
+        // This number already owns an account — send them to sign in.
+        setMode("signin");
+        setSub("form");
+        setCode("");
+        setErr("This mobile already has an account — please sign in.");
         return;
       }
-      await refresh();
-      setStep("done");
-      onClose();
+      await register({ phone, email, password, name: name || undefined });
+      await finish();
     });
 
-  // after a step-up OTP verify during login, continue to password
-  const submitStepUpOtp = () =>
-    run(async () => {
-      await verifyOtp(phone, code);
-      setStep("login");
-    });
+  const switchMode = (m: Mode) => {
+    setMode(m);
+    setSub("form");
+    setCode("");
+    setErr("");
+  };
 
   const field = "w-full bg-white/10 border border-white/20 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-400";
   const primary = "w-full py-3 rounded-xl bg-blue-500 hover:bg-blue-600 font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2";
+  const tab = (active: boolean) =>
+    `flex-1 py-2 text-sm font-semibold rounded-lg transition ${active ? "bg-white/10 text-white" : "text-white/45 hover:text-white/70"}`;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
@@ -114,45 +130,55 @@ export function AuthDialog({ onClose }: { onClose: () => void }) {
           aria-hidden
         />
 
-        {step === "phone" && (
+        {sub === "form" && (
+          <div className="flex gap-1 rounded-xl bg-white/5 p-1">
+            <button className={tab(mode === "signin")} onClick={() => switchMode("signin")}>Sign in</button>
+            <button className={tab(mode === "signup")} onClick={() => switchMode("signup")}>Create account</button>
+          </div>
+        )}
+
+        {/* ---- SIGN IN ---- */}
+        {mode === "signin" && sub === "form" && (
           <>
-            <p className="text-sm text-white/60">Enter your WhatsApp mobile number to continue.</p>
-            <input className={field} placeholder="WhatsApp mobile (10-digit)" value={phone} onChange={(e) => setPhone(e.target.value)} />
-            <button className={primary} disabled={busy} onClick={startPhone}>
-              {busy && <Loader2 size={15} className="animate-spin" />} Continue
+            <input className={field} placeholder="Email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <input className={field} placeholder="Password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <button className={primary} disabled={busy} onClick={submitSignin}>
+              {busy && <Loader2 size={15} className="animate-spin" />} Sign in
+            </button>
+            <p className="text-[11px] text-white/30 text-center">New here? Use “Create account”.</p>
+          </>
+        )}
+
+        {mode === "signin" && sub === "otp" && (
+          <>
+            <p className="text-sm text-white/60">One-time security check. Enter the 6-digit code sent to {phone}.</p>
+            <input className={field} placeholder="······" maxLength={6} inputMode="numeric" value={code} onChange={(e) => setCode(e.target.value)} />
+            <button className={primary} disabled={busy} onClick={submitSigninOtp}>
+              {busy && <Loader2 size={15} className="animate-spin" />} Verify & sign in
             </button>
           </>
         )}
 
-        {step === "otp" && (
+        {/* ---- CREATE ACCOUNT ---- */}
+        {mode === "signup" && sub === "form" && (
           <>
-            <p className="text-sm text-white/60">Enter the 6-digit code sent on WhatsApp to {phone}.</p>
-            <input className={field} placeholder="······" maxLength={6} value={code} onChange={(e) => setCode(e.target.value)} inputMode="numeric" />
-            <button className={primary} disabled={busy} onClick={route === "login" ? submitStepUpOtp : submitOtp}>
-              {busy && <Loader2 size={15} className="animate-spin" />} Verify
+            <input className={field} placeholder="Full name (optional)" value={name} onChange={(e) => setName(e.target.value)} />
+            <input className={field} placeholder="Email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <input className={field} placeholder="Password (min 8 chars)" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <input className={field} placeholder="Re-enter password" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+            <input className={field} placeholder="Mobile number (10-digit)" inputMode="numeric" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            <button className={primary} disabled={busy} onClick={submitSignup}>
+              {busy && <Loader2 size={15} className="animate-spin" />} Get OTP
             </button>
           </>
         )}
 
-        {step === "register" && (
+        {mode === "signup" && sub === "otp" && (
           <>
-            <p className="text-sm text-white/60">Create your account — used to log in next time (no OTP).</p>
-            <input className={field} placeholder="Full name" value={name} onChange={(e) => setName(e.target.value)} />
-            <input className={field} placeholder="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-            <input className={field} placeholder="Password (min 8 chars)" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-            <button className={primary} disabled={busy} onClick={submitRegister}>
-              {busy && <Loader2 size={15} className="animate-spin" />} Create account
-            </button>
-          </>
-        )}
-
-        {step === "login" && (
-          <>
-            <p className="text-sm text-white/60">Welcome back — log in with your email & password.</p>
-            <input className={field} placeholder="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-            <input className={field} placeholder="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-            <button className={primary} disabled={busy} onClick={submitLogin}>
-              {busy && <Loader2 size={15} className="animate-spin" />} Log in
+            <p className="text-sm text-white/60">Enter the 6-digit code sent to {phone} to finish sign-up.</p>
+            <input className={field} placeholder="······" maxLength={6} inputMode="numeric" value={code} onChange={(e) => setCode(e.target.value)} />
+            <button className={primary} disabled={busy} onClick={submitSignupOtp}>
+              {busy && <Loader2 size={15} className="animate-spin" />} Verify & create account
             </button>
           </>
         )}
