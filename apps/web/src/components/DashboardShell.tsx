@@ -2,6 +2,7 @@ import { type ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { LogOut } from "lucide-react";
 import { useSession } from "../lib/session";
+import { ROLE_META } from "./RoleGuard";
 
 export interface NavItem {
   to: string;
@@ -38,7 +39,24 @@ export function DashboardShell({ title, nav, children }: { title: string; nav: N
         </button>
       </aside>
       <main className="p-8">
-        <div className="text-xs text-white/40 mb-4">{me?.session?.role} · {me?.session?.userId?.slice(0, 8)}</div>
+        {(() => {
+          const role = me?.session?.role;
+          const meta = role ? ROLE_META[role] : null;
+          const display = me?.user?.name || me?.user?.email || "there";
+          return (
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-5">
+              <div>
+                <h2 className="text-xl font-black tracking-tight">Welcome back, {display}</h2>
+                <p className="text-sm text-white/45">{meta?.surface ?? "Dashboard"}</p>
+              </div>
+              {meta && (
+                <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ring-1 ${meta.badge}`}>
+                  {meta.label}
+                </span>
+              )}
+            </div>
+          );
+        })()}
         {children}
       </main>
     </div>

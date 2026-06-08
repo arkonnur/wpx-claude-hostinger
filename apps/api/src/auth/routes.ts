@@ -156,7 +156,12 @@ authRoutes.post("/login", async (c) => {
 authRoutes.get("/me", async (c) => {
   const s = await getSession(c);
   const v = await getVerified(c);
-  return c.json({ session: s, verified: v ? { contactId: v.contactId, scope: v.scope } : null });
+  let user: { name: string | null; email: string | null } | null = null;
+  if (s) {
+    const u = await repo.findUserById(s.userId);
+    if (u) user = { name: u.name ?? null, email: u.email ?? null };
+  }
+  return c.json({ session: s, user, verified: v ? { contactId: v.contactId, scope: v.scope } : null });
 });
 
 authRoutes.post("/logout", (c) => {

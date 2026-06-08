@@ -22,6 +22,7 @@ export const logout = () => post<{ ok: true }>("/api/auth/logout", {});
 
 export interface Me {
   session: { userId: string; role: Role; tenantId: string; contactId: string } | null;
+  user: { name: string | null; email: string | null } | null;
   verified: { contactId: string; scope: string } | null;
 }
 export const me = () => get<Me>("/api/auth/me");

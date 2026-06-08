@@ -117,6 +117,10 @@ export async function findUserByEmail(email: string) {
   const rows = await getDb().select().from(users).where(eq(users.email, email)).limit(1);
   return rows[0] ?? null;
 }
+export async function findUserById(id: string) {
+  const rows = await getDb().select().from(users).where(eq(users.id, id)).limit(1);
+  return rows[0] ?? null;
+}
 export async function findUserByPhoneHash(phoneHash: string) {
   const c = await getDb().select().from(contacts).where(eq(contacts.phoneHash, phoneHash)).limit(1);
   if (!c[0]) return null;

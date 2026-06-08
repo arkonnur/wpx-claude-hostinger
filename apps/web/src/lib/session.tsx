@@ -7,6 +7,7 @@ import { me as fetchMe, logout as apiLogout, type Me } from "./auth";
 interface SessionState {
   loading: boolean;
   role: Role | null;
+  name: string | null;
   verified: boolean;
   me: Me | null;
   refresh: () => Promise<void>;
@@ -39,7 +40,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   return (
     <Ctx.Provider
-      value={{ loading, me, role: me?.session?.role ?? null, verified: !!me?.verified, refresh, signOut }}
+      value={{ loading, me, role: me?.session?.role ?? null, name: me?.user?.name ?? null, verified: !!me?.verified, refresh, signOut }}
     >
       {children}
     </Ctx.Provider>
