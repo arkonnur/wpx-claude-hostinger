@@ -5,6 +5,7 @@ import { DashboardShell, type NavItem } from "../components/DashboardShell";
 import { LeadsBoard } from "./LeadsBoard";
 import { MyRequests } from "./MyRequests";
 import { PricingConfigEditor } from "./PricingConfig";
+import { ProductsConfigEditor } from "./ProductsConfig";
 import { CrewBoard } from "./CrewBoard";
 import { ScheduleBoard } from "./ScheduleBoard";
 import { JobsBoard } from "./JobsBoard";
@@ -86,11 +87,28 @@ const ownerNav: NavItem[] = [
   { to: "/owner", label: "Billing" },
 ];
 export function OwnerDashboard() {
+  const [tab, setTab] = useState<"pricing" | "products">("pricing");
   return (
     <DashboardShell title="Owner" nav={ownerNav}>
-      <h1 className="text-2xl font-black mb-2">Dynamic pricing</h1>
-      <p className="mb-6 text-sm text-white/45">Edit rates — they go live on every calculator within ~30s.</p>
-      <PricingConfigEditor />
+      <div className="mb-6 flex items-center gap-2">
+        {(["pricing", "products"] as const).map((t) => (
+          <button key={t} onClick={() => setTab(t)}
+            className={`rounded-xl px-4 py-2 text-sm font-bold capitalize ${tab === t ? "bg-blue-500 text-white" : "border border-white/10 text-white/55 hover:bg-white/5"}`}>
+            {t === "pricing" ? "Dynamic pricing" : "Products & brands"}
+          </button>
+        ))}
+      </div>
+      {tab === "pricing" ? (
+        <>
+          <p className="mb-6 text-sm text-white/45">Edit rates — they go live on every calculator within ~30s.</p>
+          <PricingConfigEditor />
+        </>
+      ) : (
+        <>
+          <p className="mb-6 text-sm text-white/45">Brand catalog — feeds material picks in quotes and execution checklists.</p>
+          <ProductsConfigEditor />
+        </>
+      )}
     </DashboardShell>
   );
 }
