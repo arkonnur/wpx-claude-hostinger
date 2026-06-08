@@ -91,6 +91,9 @@ export function PhotoDiagnose() {
       } else if (e instanceof ApiError && e.status === 403) {
         setError("Uploads are temporarily blocked from this device.");
         setStage("idle");
+      } else if (e instanceof ApiError && (e.status === 502 || e.status === 503)) {
+        setError("AI is busy right now. Wait a few seconds and try again.");
+        setStage("idle");
       } else {
         setError((e as Error).message || "Couldn't analyze the photo. Try again.");
         setStage("idle");

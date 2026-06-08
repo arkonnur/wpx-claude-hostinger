@@ -2,9 +2,13 @@
 // (cost cascade §6). Never emits confidence %. Already-waterproofed surfaces get
 // a genuine condition report, not invented problems.
 
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
-const ENDPOINT = (key: string) =>
-  `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`;
+// Fallback chain — first that responds wins. Overridable via GEMINI_MODELS (csv).
+const MODELS = (process.env.GEMINI_MODELS || process.env.GEMINI_MODEL ||
+  "gemini-2.5-flash,gemini-flash-latest,gemini-2.0-flash-lite")
+  .split(",").map((m) => m.trim()).filter(Boolean);
+const ENDPOINT = (model: string, key: string) =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export const ALLOWED_SURFACES = [
   "terrace_roof", "interior_wall_ceiling", "bathroom_wet", "pool",
@@ -67,11 +71,8 @@ export function geminiKey(): string | null {
   return process.env.GEMINI_API_KEY || null;
 }
 
-/** One Flash call. Returns null on transport/parse failure (caller decides). */
-export async function diagnosePhoto(base64: string, mime: string): Promise<PhotoDiagnosis | null> {
-  const key = geminiKey();
-  if (!key) return null;
-
+/** Single attempt against one model. Returns the parsed diagnosis or throws. */
+async function callOnce(model: string, key: string, base64: string, mime: string): Promise<PhotoDiagnosis> {
   const body = {
     contents: [{
       parts: [
@@ -86,27 +87,51 @@ export async function diagnosePhoto(base64: string, mime: string): Promise<Photo
     },
   };
 
-  let res: Response;
-  try {
-    res = await fetch(ENDPOINT(key), {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-    });
-  } catch {
-    return null;
-  }
-  if (!res.ok) return null;
+  const res = await fetch(ENDPOINT(model, key), {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
 
-  const data = await res.json().catch(() => null) as
-    | { candidates?: { content?: { parts?: { text?: string }[] } }[] }
-    | null;
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    const err = new Error(`gemini ${model} HTTP ${res.status}`);
+    (err as { status?: number }).status = res.status;
+    console.error(`[gemini] ${model} ${res.status}: ${detail.slice(0, 240)}`);
+    throw err;
+  }
+
+  const data = await res.json() as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
   const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) return null;
-
-  try {
-    return JSON.parse(text) as PhotoDiagnosis;
-  } catch {
-    return null;
+  if (!text) {
+    console.error(`[gemini] ${model} empty candidate: ${JSON.stringify(data).slice(0, 240)}`);
+    throw new Error("empty_candidate");
   }
+  return JSON.parse(text) as PhotoDiagnosis;
+}
+
+const RETRYABLE = new Set([429, 500, 502, 503, 504]);
+
+/**
+ * Diagnose a photo with retry + model fallback. Walks the model chain; for each
+ * model retries once on transient (429/5xx). Returns null only when every model
+ * is exhausted (caller maps to ai_failed). Logs each failure to stderr.
+ */
+export async function diagnosePhoto(base64: string, mime: string): Promise<PhotoDiagnosis | null> {
+  const key = geminiKey();
+  if (!key) return null;
+
+  for (const model of MODELS) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        return await callOnce(model, key, base64, mime);
+      } catch (e) {
+        const status = (e as { status?: number }).status;
+        // Non-retryable + not a transport error → next model immediately.
+        if (status && !RETRYABLE.has(status)) break;
+        if (attempt === 0) await sleep(700); // brief backoff before retry
+      }
+    }
+  }
+  return null;
 }
