@@ -2,6 +2,8 @@
 import { Hono } from "hono";
 import { requireRole, getSession } from "../auth/guards";
 import { loadPricingConfig, savePricingConfig } from "../config/pricing";
+import { loadToolConfigs, saveToolConfigs } from "../config/tools";
+import { getDefaultTenantId } from "../auth/repo";
 
 export const configRoutes = new Hono();
 
@@ -20,4 +22,20 @@ configRoutes.put("/pricing", requireRole("owner"), async (c) => {
   if (!body) return c.json({ error: "bad_body" }, 400);
   const saved = await savePricingConfig(s.tenantId, body);
   return c.json({ ok: true, config: saved });
+});
+
+/** Public tool gating for the default tenant — ToolHub renders/sorts/gates from this. */
+configRoutes.get("/tools", async (c) => {
+  const tenantId = await getDefaultTenantId();
+  return c.json({ tools: await loadToolConfigs(tenantId) });
+});
+
+/** Replace the tenant tool gating (owner only). */
+configRoutes.put("/tools", requireRole("owner"), async (c) => {
+  const s = await getSession(c);
+  if (!s?.tenantId) return c.json({ error: "no_tenant" }, 401);
+  const body = await c.req.json().catch(() => null);
+  if (!Array.isArray(body)) return c.json({ error: "bad_body" }, 400);
+  const saved = await saveToolConfigs(s.tenantId, body);
+  return c.json({ ok: true, tools: saved });
 });

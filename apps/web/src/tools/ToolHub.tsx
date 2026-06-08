@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   ScanLine,
@@ -10,65 +11,58 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { GateBadge, type Gate } from "./ToolShell";
+import { get } from "../lib/api";
 
-interface Tool {
+interface ToolMeta {
+  key: string;
   to: string;
   title: string;
   desc: string;
   Icon: LucideIcon;
-  gate: Gate;
   badge?: string;
   featured?: boolean;
 }
 
-const TOOLS: Tool[] = [
-  {
-    to: "/diagnose",
-    title: "AI Photo Diagnosis",
-    desc: "Upload a photo of dampness, a terrace or a leak — get an instant AI condition report.",
-    Icon: ScanLine,
-    gate: "OTP once",
-    badge: "Most popular",
-    featured: true,
-  },
-  {
-    to: "/calculator",
-    title: "Instant Cost Calculator",
-    desc: "Enter area + surface, get a transparent Bangalore price band in seconds. No sign-up.",
-    Icon: Calculator,
-    gate: "Free",
-  },
-  {
-    to: "/estimate",
-    title: "Exact Tiered Estimate",
-    desc: "Basic / medium / premium pricing with GST, brands and coverage breakdown.",
-    Icon: ReceiptIndianRupee,
-    gate: "OTP once",
-  },
-  {
-    to: "/book",
-    title: "Free Site Inspection",
-    desc: "Book a free on-site engineering inspection — moisture mapping, slope & crack survey.",
-    Icon: ClipboardCheck,
-    gate: "Free",
-  },
-  {
-    to: "/warranty",
-    title: "Warranty Check",
-    desc: "Verify your WaterProofX warranty card and service history by number.",
-    Icon: ShieldCheck,
-    gate: "Free",
-  },
-  {
-    to: "/report",
-    title: "Building Health Report",
-    desc: "Combine every tool into one AI-powered building health score and master report.",
-    Icon: Activity,
-    gate: "Account",
-  },
+// Static presentation keyed by toolKey; gating/order/visibility come from the API.
+const TOOL_META: Record<string, ToolMeta> = {
+  diagnose: { key: "diagnose", to: "/diagnose", title: "AI Photo Diagnosis", desc: "Upload a photo of dampness, a terrace or a leak — get an instant AI condition report.", Icon: ScanLine, badge: "Most popular", featured: true },
+  calculator: { key: "calculator", to: "/calculator", title: "Instant Cost Calculator", desc: "Enter area + surface, get a transparent Bangalore price band in seconds. No sign-up.", Icon: Calculator },
+  estimate: { key: "estimate", to: "/estimate", title: "Exact Tiered Estimate", desc: "Basic / medium / premium pricing with GST, brands and coverage breakdown.", Icon: ReceiptIndianRupee },
+  book: { key: "book", to: "/book", title: "Free Site Inspection", desc: "Book a free on-site engineering inspection — moisture mapping, slope & crack survey.", Icon: ClipboardCheck },
+  warranty: { key: "warranty", to: "/warranty", title: "Warranty Check", desc: "Verify your WaterProofX warranty card and service history by number.", Icon: ShieldCheck },
+  report: { key: "report", to: "/report", title: "Building Health Report", desc: "Combine every tool into one AI-powered building health score and master report.", Icon: Activity },
+};
+
+interface ToolConfig { toolKey: string; enabled: boolean; sortOrder: number; gate: string; access: string }
+
+const GATE_LABEL: Record<string, Gate> = { public: "Free", otp: "OTP once", account: "Account" };
+
+// Fallback order if the config call fails — preserves the original grid.
+const FALLBACK: ToolConfig[] = [
+  { toolKey: "diagnose", enabled: true, sortOrder: 0, gate: "otp", access: "self_serve" },
+  { toolKey: "calculator", enabled: true, sortOrder: 1, gate: "public", access: "self_serve" },
+  { toolKey: "estimate", enabled: true, sortOrder: 2, gate: "otp", access: "self_serve" },
+  { toolKey: "book", enabled: true, sortOrder: 3, gate: "public", access: "self_serve" },
+  { toolKey: "warranty", enabled: true, sortOrder: 4, gate: "public", access: "self_serve" },
+  { toolKey: "report", enabled: true, sortOrder: 5, gate: "account", access: "self_serve" },
 ];
 
 export function ToolHub() {
+  const [cfg, setCfg] = useState<ToolConfig[] | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    get<{ tools: ToolConfig[] }>("/api/config/tools")
+      .then((r) => alive && setCfg(r.tools?.length ? r.tools : FALLBACK))
+      .catch(() => alive && setCfg(FALLBACK));
+    return () => { alive = false; };
+  }, []);
+
+  const tools = (cfg ?? FALLBACK)
+    .filter((t) => t.enabled && TOOL_META[t.toolKey])
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((t) => ({ ...(TOOL_META[t.toolKey] as ToolMeta), gate: GATE_LABEL[t.gate] ?? "Free", siteVisitOnly: t.access === "site_visit_only" }));
+
   return (
     <main className="mx-auto max-w-5xl px-6 py-10">
       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#60a5fa]">
@@ -83,9 +77,9 @@ export function ToolHub() {
       </p>
 
       <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {TOOLS.map(({ to, title, desc, Icon, gate, badge, featured }) => (
+        {tools.map(({ key, to, title, desc, Icon, gate, badge, featured, siteVisitOnly }) => (
           <Link
-            key={to}
+            key={key}
             to={to}
             className={`group relative flex flex-col rounded-3xl p-6 ring-1 transition-all hover:-translate-y-1 ${
               featured
@@ -106,7 +100,7 @@ export function ToolHub() {
             <div className="mt-5 flex items-center justify-between">
               <GateBadge gate={gate} />
               <span className="inline-flex items-center gap-1 text-sm font-semibold text-[#60a5fa]">
-                Open
+                {siteVisitOnly ? "Site visit" : "Open"}
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </span>
             </div>
