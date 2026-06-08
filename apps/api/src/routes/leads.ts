@@ -200,6 +200,27 @@ leadRoutes.post("/", async (c) => {
   return c.json({ ok: true, leadId, score, tier });
 });
 
+// ───────────────────────── client: my own requests + activity ───────────────
+
+/** The signed-in user's own leads + recent activity (any role). */
+leadRoutes.get("/mine", requireRole(), async (c) => {
+  const s = await getSession(c);
+  if (!s?.contactId || !s.tenantId) return c.json({ leads: [], events: [] });
+  const db = getDb();
+  const [mine, events] = await Promise.all([
+    db.select({
+      id: leads.id, service: leads.service, severity: leads.severity, areaSqft: leads.areaSqft,
+      status: leads.status, source: leads.source, createdAt: leads.createdAt, utm: leads.utm,
+    }).from(leads).where(and(eq(leads.tenantId, s.tenantId), eq(leads.contactId, s.contactId)))
+      .orderBy(desc(leads.createdAt)).limit(50),
+    db.select({
+      id: clientEvents.id, type: clientEvents.type, createdAt: clientEvents.createdAt,
+    }).from(clientEvents).where(and(eq(clientEvents.tenantId, s.tenantId), eq(clientEvents.contactId, s.contactId)))
+      .orderBy(desc(clientEvents.createdAt)).limit(30),
+  ]);
+  return c.json({ leads: mine, events });
+});
+
 // ───────────────────────── admin/owner: list + manage leads ─────────────────
 
 /** List leads for the session's tenant, newest first. Optional ?status= / ?tier= filters. */

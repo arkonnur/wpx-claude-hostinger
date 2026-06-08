@@ -2,6 +2,7 @@
 // in Phases 4–8; these establish the role-scoped surfaces + navigation now.
 import { DashboardShell, Placeholder, type NavItem } from "../components/DashboardShell";
 import { LeadsBoard } from "./LeadsBoard";
+import { MyRequests } from "./MyRequests";
 
 const clientNav: NavItem[] = [
   { to: "/portal", label: "Overview" },
@@ -12,13 +13,8 @@ const clientNav: NavItem[] = [
 export function ClientDashboard() {
   return (
     <DashboardShell title="My account" nav={clientNav}>
-      <h1 className="text-2xl font-black mb-6">Your building health</h1>
-      <div className="grid md:grid-cols-2 gap-4">
-        <Placeholder title="Building Health Score" note="Use the tools to build your score (Phase 4)." />
-        <Placeholder title="MasterReport" note="Your combined report — fills as you use tools." />
-        <Placeholder title="Quotes" note="Estimates & quotes you receive (Phase 4)." />
-        <Placeholder title="Warranty card" note="Issued after job completion (Phase 7)." />
-      </div>
+      <h1 className="text-2xl font-black mb-6">Your requests & activity</h1>
+      <MyRequests />
     </DashboardShell>
   );
 }
