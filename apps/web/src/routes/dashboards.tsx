@@ -3,6 +3,7 @@
 import { DashboardShell, Placeholder, type NavItem } from "../components/DashboardShell";
 import { LeadsBoard } from "./LeadsBoard";
 import { MyRequests } from "./MyRequests";
+import { PricingConfigEditor } from "./PricingConfig";
 
 const clientNav: NavItem[] = [
   { to: "/portal", label: "Overview" },
@@ -64,12 +65,9 @@ const ownerNav: NavItem[] = [
 export function OwnerDashboard() {
   return (
     <DashboardShell title="Owner" nav={ownerNav}>
-      <h1 className="text-2xl font-black mb-6">Platform</h1>
-      <div className="grid md:grid-cols-3 gap-4">
-        <Placeholder title="Tenants" note="Cross-tenant management (Phase 8)." />
-        <Placeholder title="Dynamic pricing & products" note="Edit all rates/products — reflects everywhere (Phase 8)." />
-        <Placeholder title="Tools config" note="Gate/access per tool, AI-verified (Phase 8)." />
-      </div>
+      <h1 className="text-2xl font-black mb-2">Dynamic pricing</h1>
+      <p className="mb-6 text-sm text-white/45">Edit rates — they go live on every calculator within ~30s.</p>
+      <PricingConfigEditor />
     </DashboardShell>
   );
 }
