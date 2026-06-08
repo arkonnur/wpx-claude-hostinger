@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { get, patch } from "../lib/api";
+import { InspectionForm } from "./InspectionForm";
 
 interface Appt {
   id: string;
@@ -47,6 +48,7 @@ export function ScheduleBoard() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "unassigned" | "open">("open");
+  const [inspectAppt, setInspectAppt] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -154,11 +156,19 @@ export function ScheduleBoard() {
                   </select>
                 </label>
                 {a.assignedTo && <span className="text-xs font-semibold text-emerald-300/80">→ {staffName(a.assignedTo)}</span>}
+                <button
+                  onClick={() => setInspectAppt(a.id)}
+                  className="ml-auto rounded-lg border border-white/15 px-3 py-1.5 text-xs font-bold text-white/80 hover:bg-white/5"
+                >
+                  📋 Report
+                </button>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      {inspectAppt && <InspectionForm apptId={inspectAppt} onClose={() => setInspectAppt(null)} />}
     </div>
   );
 }

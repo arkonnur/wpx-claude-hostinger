@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { get, patch } from "../lib/api";
+import { InspectionForm } from "./InspectionForm";
 
 interface Appt {
   id: string;
@@ -56,6 +57,7 @@ export function CrewBoard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
+  const [inspectAppt, setInspectAppt] = useState<string | null>(null);
 
   function load() {
     get<{ appointments: Appt[] }>("/api/appointments/mine")
@@ -105,24 +107,30 @@ export function CrewBoard() {
           📞 {a.contactPhone}
         </a>
       )}
-      {(NEXT[a.status] ?? []).length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {(NEXT[a.status] ?? []).map((n) => (
-            <button
-              key={n.to}
-              disabled={busy === a.id}
-              onClick={() => move(a.id, n.to)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-bold disabled:opacity-50 ${
-                n.to === "no_show"
-                  ? "border border-rose-400/30 text-rose-300 hover:bg-rose-500/10"
-                  : "bg-blue-500 text-white hover:bg-blue-600"
-              }`}
-            >
-              {n.label}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="mt-3 flex flex-wrap gap-2">
+        {(NEXT[a.status] ?? []).map((n) => (
+          <button
+            key={n.to}
+            disabled={busy === a.id}
+            onClick={() => move(a.id, n.to)}
+            className={`rounded-lg px-3 py-1.5 text-xs font-bold disabled:opacity-50 ${
+              n.to === "no_show"
+                ? "border border-rose-400/30 text-rose-300 hover:bg-rose-500/10"
+                : "bg-blue-500 text-white hover:bg-blue-600"
+            }`}
+          >
+            {n.label}
+          </button>
+        ))}
+        {(a.status === "confirmed" || a.status === "in_progress" || a.status === "completed") && (
+          <button
+            onClick={() => setInspectAppt(a.id)}
+            className="rounded-lg border border-white/15 px-3 py-1.5 text-xs font-bold text-white/80 hover:bg-white/5"
+          >
+            📋 Inspection
+          </button>
+        )}
+      </div>
     </div>
   );
 
@@ -153,6 +161,8 @@ export function CrewBoard() {
           <div className="grid gap-3 md:grid-cols-2 opacity-60">{done.map(Card)}</div>
         </section>
       )}
+
+      {inspectAppt && <InspectionForm apptId={inspectAppt} onClose={() => setInspectAppt(null)} />}
     </div>
   );
 }
