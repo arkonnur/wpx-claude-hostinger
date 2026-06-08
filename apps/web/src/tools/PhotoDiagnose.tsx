@@ -1,38 +1,101 @@
 import { useRef, useState } from "react";
-import { ScanLine, Upload, Loader2, ImageOff } from "lucide-react";
+import { ScanLine, Upload, Loader2, ImageOff, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { ToolShell } from "./ToolShell";
+import { post, ApiError } from "../lib/api";
+import { track } from "../lib/track";
 
-type Stage = "idle" | "checking" | "queued";
+type Stage = "idle" | "analyzing" | "done" | "rejected";
 
 const MAX_MB = 8;
-const OK_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic"];
+const OK_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+interface Diagnosis {
+  surface_type: string;
+  already_waterproofed: boolean;
+  has_damage: boolean;
+  severity: "none" | "minor" | "moderate" | "severe" | "critical";
+  cause: string;
+  system: string;
+  brand: string;
+  summary: string;
+  recommendation: string;
+}
+
+const SURFACE_LABEL: Record<string, string> = {
+  terrace_roof: "Terrace / Roof", interior_wall_ceiling: "Interior wall / ceiling",
+  bathroom_wet: "Bathroom / wet area", pool: "Swimming pool", water_tank: "Water tank",
+  exterior_facade: "Exterior facade", basement: "Basement", balcony: "Balcony", other: "Surface",
+};
+const SEV_STYLE: Record<string, string> = {
+  none: "bg-emerald-500/15 text-emerald-300 ring-emerald-400/30",
+  minor: "bg-sky-500/15 text-sky-300 ring-sky-400/30",
+  moderate: "bg-amber-500/15 text-amber-300 ring-amber-400/30",
+  severe: "bg-orange-500/15 text-orange-300 ring-orange-400/30",
+  critical: "bg-rose-500/15 text-rose-300 ring-rose-400/30",
+};
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => {
+      const s = String(r.result);
+      const comma = s.indexOf(",");
+      resolve(comma >= 0 ? s.slice(comma + 1) : s); // strip data: prefix
+    };
+    r.onerror = () => reject(new Error("read failed"));
+    r.readAsDataURL(file);
+  });
+}
 
 export function PhotoDiagnose() {
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [stage, setStage] = useState<Stage>("idle");
   const [error, setError] = useState("");
+  const [rejectMsg, setRejectMsg] = useState("");
+  const [result, setResult] = useState<Diagnosis | null>(null);
 
-  function onFile(file: File) {
-    setError("");
-    // cheap client-side filter (cost cascade tier 0)
-    if (!OK_TYPES.includes(file.type)) {
-      setError("Use a JPG, PNG or WEBP photo.");
-      return;
-    }
-    if (file.size > MAX_MB * 1024 * 1024) {
-      setError(`Photo must be under ${MAX_MB} MB.`);
-      return;
-    }
-    setPreview(URL.createObjectURL(file));
-    setStage("idle");
+  function onFile(f: File) {
+    setError(""); setRejectMsg(""); setResult(null); setStage("idle");
+    if (!OK_TYPES.includes(f.type)) return setError("Use a JPG, PNG or WEBP photo.");
+    if (f.size > MAX_MB * 1024 * 1024) return setError(`Photo must be under ${MAX_MB} MB.`);
+    setFile(f);
+    setPreview(URL.createObjectURL(f));
   }
 
-  function analyze() {
-    if (!preview) return;
-    setStage("checking");
-    // Backend AI cascade lands in Phase 5. For now: accept + queue.
-    window.setTimeout(() => setStage("queued"), 900);
+  async function analyze() {
+    if (!file) return;
+    setError(""); setRejectMsg(""); setStage("analyzing");
+    track("diagnose_start", { mime: file.type });
+    try {
+      const imageBase64 = await fileToBase64(file);
+      const res = await post<{ ok: true; cached: boolean; diagnosis: Diagnosis }>(
+        "/api/diagnose", { imageBase64, mime: file.type },
+      );
+      setResult(res.diagnosis);
+      setStage("done");
+      track("diagnose_result", { surface: res.diagnosis.surface_type, severity: res.diagnosis.severity, cached: res.cached });
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 422) {
+        setRejectMsg(
+          e.data?.reason === "not_waterproofing_surface"
+            ? "That photo doesn't look like a waterproofing surface (terrace, wall, bathroom, tank, etc.). Upload a clear shot of the affected area."
+            : "This photo was already rejected. Repeated junk uploads get your access limited.",
+        );
+        setStage("rejected");
+        track("diagnose_result", { rejected: true });
+      } else if (e instanceof ApiError && e.status === 429) {
+        setError("Daily photo limit reached. Try again tomorrow or book a free inspection.");
+        setStage("idle");
+      } else if (e instanceof ApiError && e.status === 403) {
+        setError("Uploads are temporarily blocked from this device.");
+        setStage("idle");
+      } else {
+        setError((e as Error).message || "Couldn't analyze the photo. Try again.");
+        setStage("idle");
+      }
+    }
   }
 
   return (
@@ -73,13 +136,11 @@ export function PhotoDiagnose() {
           {error && <p className="mt-3 text-sm font-semibold text-rose-300">{error}</p>}
           <button
             onClick={analyze}
-            disabled={!preview || stage === "checking"}
+            disabled={!file || stage === "analyzing"}
             className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#002bfa] px-6 py-3.5 text-sm font-bold text-white transition-colors hover:bg-[#1d44ff] disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {stage === "checking" ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Analyzing…
-              </>
+            {stage === "analyzing" ? (
+              <><Loader2 className="h-4 w-4 animate-spin" /> Analyzing…</>
             ) : (
               "Run AI diagnosis"
             )}
@@ -88,27 +149,45 @@ export function PhotoDiagnose() {
 
         {/* Result panel */}
         <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-          {stage === "queued" ? (
+          {stage === "done" && result ? (
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#60a5fa]">
-                Awareness report
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#60a5fa]">Awareness report</p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <h3 className="text-lg font-bold">{SURFACE_LABEL[result.surface_type] ?? "Surface"}</h3>
+                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase ring-1 ${SEV_STYLE[result.severity]}`}>
+                  {result.severity === "none" ? "Healthy" : `${result.severity} severity`}
+                </span>
+                {result.already_waterproofed && (
+                  <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-[10px] font-bold uppercase text-white/60 ring-1 ring-white/20">
+                    Already coated
+                  </span>
+                )}
+              </div>
+
+              <p className="mt-3 text-sm leading-relaxed text-white/70">{result.summary}</p>
+
+              <dl className="mt-4 space-y-2 text-sm">
+                {result.cause && <Row k="Likely cause" v={result.cause} />}
+                {result.system && <Row k="Suggested system" v={result.system} />}
+                {result.brand && <Row k="Brand family" v={result.brand} />}
+              </dl>
+
+              <div className="mt-4 rounded-xl bg-[#002bfa]/10 px-4 py-3 text-sm text-white/70 ring-1 ring-[#002bfa]/20">
+                <p className="font-semibold text-white">Next step</p>
+                <p className="mt-0.5">{result.recommendation}</p>
+              </div>
+              <p className="mt-3 text-xs text-white/40">
+                Awareness-level read from one photo. A free on-site engineering visit confirms root cause before any work.
               </p>
-              <h3 className="mt-2 text-lg font-bold">Photo received & queued</h3>
-              <p className="mt-2 text-sm leading-relaxed text-white/60">
-                Our AI is checking surface type, dampness pattern and severity band.
-                You'll get an awareness-level condition summary — the full root-cause
-                diagnosis comes with a free on-site engineering visit.
-              </p>
-              <ul className="mt-4 space-y-2 text-sm text-white/55">
-                <li>• Surface & material detection</li>
-                <li>• Dampness / efflorescence pattern</li>
-                <li>• Indicative severity band</li>
-                <li>• Recommended next step</li>
-              </ul>
-              <p className="mt-4 rounded-xl bg-[#002bfa]/10 px-4 py-3 text-xs text-white/55 ring-1 ring-[#002bfa]/20">
-                Live AI scoring connects in the next build phase — your upload is
-                saved against your verified number.
-              </p>
+            </div>
+          ) : stage === "rejected" ? (
+            <div className="flex h-full flex-col items-center justify-center text-center">
+              <AlertTriangle className="h-8 w-8 text-amber-300" />
+              <p className="mt-3 text-sm text-white/70">{rejectMsg}</p>
+            </div>
+          ) : stage === "done" ? (
+            <div className="flex h-full flex-col items-center justify-center text-center text-emerald-300">
+              <CheckCircle2 className="h-8 w-8" />
             </div>
           ) : (
             <div className="flex h-full flex-col items-center justify-center text-center text-white/40">
@@ -119,5 +198,14 @@ export function PhotoDiagnose() {
         </div>
       </div>
     </ToolShell>
+  );
+}
+
+function Row({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="flex justify-between gap-3 border-b border-white/5 pb-1.5">
+      <dt className="shrink-0 text-white/45">{k}</dt>
+      <dd className="text-right text-white/80">{v}</dd>
+    </div>
   );
 }
