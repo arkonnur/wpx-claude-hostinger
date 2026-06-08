@@ -20,6 +20,44 @@ const STATUS_STYLE: Record<string, string> = {
 
 const inr = (v: string | number | null) => "₹" + Math.round(Number(v ?? 0)).toLocaleString("en-IN");
 
+const esc = (s: string) => s.replace(/[&<>"]/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m] as string));
+
+/** Open a clean, branded print window — customer saves it as PDF from the browser. */
+function printQuote(q: Quote) {
+  const rows = (q.lineItems ?? [])
+    .map((li) => `<tr><td>${esc(li.description)}</td><td class="r">${li.areaSqft} sqft</td><td class="r">₹${li.ratePerSqft}</td><td class="r">${inr(li.amount)}</td></tr>`)
+    .join("");
+  const valid = q.validUntil ? `Valid until ${new Date(q.validUntil).toLocaleDateString("en-IN")}` : "Draft";
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>Quote ${esc(q.number ?? "")}</title>
+<style>
+  *{box-sizing:border-box} body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#0b1530;margin:0;padding:40px;max-width:720px}
+  .brand{font-weight:900;font-size:22px} .brand span{color:#002bfa}
+  h1{font-size:18px;margin:24px 0 4px} .muted{color:#667;font-size:12px}
+  table{width:100%;border-collapse:collapse;margin:20px 0;font-size:13px}
+  th,td{padding:8px 10px;border-bottom:1px solid #e5e9f2;text-align:left} th{background:#f5f7fb;text-transform:uppercase;font-size:10px;letter-spacing:.05em;color:#667}
+  .r{text-align:right} .tot{margin-left:auto;width:240px;font-size:13px}
+  .tot div{display:flex;justify-content:space-between;padding:3px 0} .tot .g{font-weight:900;font-size:16px;border-top:1px solid #0b1530;padding-top:6px}
+  .note{margin-top:16px;font-size:11px;color:#667} .foot{margin-top:32px;font-size:11px;color:#889;border-top:1px solid #e5e9f2;padding-top:12px}
+  @media print{body{padding:0}}
+</style></head><body>
+  <div class="brand">Water<span>ProofX</span></div>
+  <div class="muted">AI-Powered Engineered Waterproofing · Bangalore</div>
+  <h1>Quote ${esc(q.number ?? "")}</h1>
+  <div class="muted">${valid} · Status: ${esc(q.status)}</div>
+  <table><thead><tr><th>Item</th><th class="r">Area</th><th class="r">Rate</th><th class="r">Amount</th></tr></thead><tbody>${rows}</tbody></table>
+  <div class="tot">
+    <div><span>Subtotal</span><span>${inr(q.subtotal)}</span></div>
+    <div><span>GST</span><span>${inr(q.gst)}</span></div>
+    <div class="g"><span>Total</span><span>${inr(q.total)}</span></div>
+  </div>
+  <div class="note">Accepted price is frozen and never revised. Lowest-price guarantee. Up to 10-year written warranty.</div>
+  <div class="foot">WaterProofX · 100ft Road, Indiranagar, Bengaluru 560038 · hello@waterproofx.in</div>
+  <script>window.onload=function(){window.print()}</script>
+</body></html>`;
+  const w = window.open("", "_blank", "width=800,height=900");
+  if (w) { w.document.write(html); w.document.close(); }
+}
+
 export function QuoteView({ quoteId, onClose, onChange }: { quoteId: string; onClose: () => void; onChange?: () => void }) {
   const { role } = useSession();
   const isStaff = role === "admin" || role === "owner";
@@ -100,6 +138,9 @@ export function QuoteView({ quoteId, onClose, onChange }: { quoteId: string; onC
             {error && <p className="text-sm font-semibold text-rose-300">{error}</p>}
 
             <div className="flex flex-wrap gap-2 border-t border-white/5 pt-4">
+              <button onClick={() => printQuote(q)} className="rounded-xl border border-white/15 px-4 py-2.5 text-sm font-bold text-white/80 hover:bg-white/5">
+                🖨 Print / PDF
+              </button>
               {isStaff && q.status === "draft" && (
                 <button disabled={busy} onClick={() => setStatus("sent")} className="rounded-xl bg-blue-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-600 disabled:opacity-50">Send to customer</button>
               )}
