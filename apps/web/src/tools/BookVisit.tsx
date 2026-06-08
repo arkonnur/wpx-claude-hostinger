@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ClipboardCheck, CheckCircle2, Loader2 } from "lucide-react";
 import { ToolShell } from "./ToolShell";
 import { post } from "../lib/api";
+import { track } from "../lib/track";
 
 const SERVICES = [
   "Terrace / Roof",
@@ -52,6 +53,7 @@ export function BookVisit() {
         source: "booking_site_visit",
         honeypot: form.company || undefined,
       });
+      track("lead_submit", { source: "booking_site_visit", service: form.service });
       setDone(true);
     } catch (err) {
       setError((err as Error).message || "Something went wrong. Try again or call us.");

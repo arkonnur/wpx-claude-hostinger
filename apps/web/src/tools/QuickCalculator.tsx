@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Calculator, Lock, ArrowRight, Check } from "lucide-react";
 import { fmtINR, type ServiceType, type Severity, type QuickRangeResult, type ExactEstimateResult } from "@wpx/core";
 import { post } from "../lib/api";
+import { track } from "../lib/track";
 import { useSession } from "../lib/session";
 import { useAuthUI } from "../lib/authui";
 
@@ -48,6 +49,7 @@ export function QuickCalculator() {
     try {
       const r = await post<ExactEstimateResult>("/api/pricing/exact", { service, area: a, severity });
       setExact(r);
+      track("estimate_view", { service, severity, area: a });
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -66,6 +68,7 @@ export function QuickCalculator() {
     try {
       const r = await post<QuickRangeResult>("/api/pricing/quick", { service, area: a, severity });
       setResult(r);
+      track("calculator_run", { service, severity, area: a, min: r.min, max: r.max });
     } catch (e) {
       setError((e as Error).message);
     } finally {

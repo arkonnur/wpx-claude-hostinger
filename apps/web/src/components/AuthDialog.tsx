@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import { X, Loader2, ShieldCheck } from "lucide-react";
 import { ApiError } from "../lib/api";
 import { sendOtp, verifyOtp, register, login, resetPassword } from "../lib/auth";
+import { track } from "../lib/track";
 import { useSession } from "../lib/session";
 
 type Mode = "signin" | "signup" | "reset";
@@ -57,15 +58,18 @@ export function AuthDialog({ onClose }: { onClose: () => void }) {
         setSub("otp");
         return;
       }
+      track("login", {});
       await finish();
     });
 
   const submitSigninOtp = () =>
     run(async () => {
       await verifyOtp(phone, code);
+      track("otp_verified", { context: "signin" });
       // verified cookie now set for this phone → retry login, no more step-up.
       const res = await login(email, password);
       if (res.needs_otp) throw new Error("Verification failed — try again.");
+      track("login", {});
       await finish();
     });
 
@@ -83,6 +87,7 @@ export function AuthDialog({ onClose }: { onClose: () => void }) {
   const submitSignupOtp = () =>
     run(async () => {
       const { hasAccount } = await verifyOtp(phone, code);
+      track("otp_verified", { context: "signup" });
       if (hasAccount) {
         // This number already owns an account — send them to sign in.
         setMode("signin");
@@ -92,6 +97,7 @@ export function AuthDialog({ onClose }: { onClose: () => void }) {
         return;
       }
       await register({ phone, email, password, name: name || undefined });
+      track("signup", {});
       await finish();
     });
 
@@ -107,6 +113,7 @@ export function AuthDialog({ onClose }: { onClose: () => void }) {
   const submitResetOtp = () =>
     run(async () => {
       await verifyOtp(phone, code); // proves phone ownership → verified cookie
+      track("otp_verified", { context: "reset" });
       setSub("newpass");
     });
 

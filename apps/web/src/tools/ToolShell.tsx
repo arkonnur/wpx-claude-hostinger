@@ -1,8 +1,9 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, Lock, ShieldCheck } from "lucide-react";
 import { useSession } from "../lib/session";
 import { useAuthUI } from "../lib/authui";
+import { track } from "../lib/track";
 
 export type Gate = "Free" | "OTP once" | "Account";
 
@@ -37,6 +38,10 @@ export function ToolShell({
 }) {
   const { verified, role, loading } = useSession();
   const { open } = useAuthUI();
+
+  useEffect(() => {
+    track("tool_view", { tool: title, gate });
+  }, [title, gate]);
 
   const needsVerify = gate === "OTP once" && !verified;
   const needsAccount = gate === "Account" && !role;

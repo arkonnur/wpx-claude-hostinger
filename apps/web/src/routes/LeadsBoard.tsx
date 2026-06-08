@@ -45,19 +45,30 @@ function timeAgo(iso: string | null): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-function LeadCard({ lead, onStatus }: { lead: Lead; onStatus: (id: string, status: string) => void }) {
+interface TimelineLead {
+  id: string; service: string | null; severity: string | null; areaSqft: number | null;
+  status: string; source: string | null; score: number | null;
+  scoreTier: "hot" | "warm" | "cold" | null; utm: { notes?: string } | null; createdAt: string | null;
+}
+interface TimelineEvent { id: string; type: string; payload: Record<string, unknown> | null; createdAt: string | null }
+interface Timeline {
+  contact: {
+    id: string; name: string | null; phone: string | null; email: string | null;
+    address: string | null; verifiedAt: string | null; hasAccount: boolean; createdAt: string | null;
+  };
+  leads: TimelineLead[];
+  events: TimelineEvent[];
+}
+
+function LeadCard({ lead, onStatus, onOpen }: { lead: Lead; onStatus: (id: string, status: string) => void; onOpen: (id: string) => void }) {
   const tier = lead.scoreTier ?? "cold";
   return (
     <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3.5 text-sm">
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="truncate font-bold text-white">{lead.name || "Unknown"}</p>
-          {lead.phone && (
-            <a href={`tel:${lead.phone}`} className="text-xs text-[#60a5fa] hover:underline">
-              {lead.phone}
-            </a>
-          )}
-        </div>
+        <button onClick={() => onOpen(lead.id)} className="min-w-0 text-left">
+          <p className="truncate font-bold text-white hover:underline">{lead.name || "Unknown"}</p>
+          {lead.phone && <span className="text-xs text-[#60a5fa]">{lead.phone}</span>}
+        </button>
         <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ring-1 ${TIER_STYLE[tier]}`}>
           {tier} · {lead.score ?? 0}
         </span>
@@ -89,10 +100,90 @@ function LeadCard({ lead, onStatus }: { lead: Lead; onStatus: (id: string, statu
   );
 }
 
+const EVENT_LABEL: Record<string, string> = {
+  tool_view: "Viewed tool", calculator_run: "Ran calculator", estimate_view: "Viewed exact estimate",
+  diagnose_start: "Started AI diagnosis", diagnose_result: "Got AI diagnosis", report_view: "Viewed health report",
+  warranty_check: "Checked warranty", book_open: "Opened booking", lead_submit: "Submitted a lead",
+  otp_verified: "Verified mobile (OTP)", signup: "Created account", login: "Logged in",
+};
+
+function TimelineDrawer({ leadId, onClose }: { leadId: string; onClose: () => void }) {
+  const [data, setData] = useState<Timeline | null>(null);
+  const [err, setErr] = useState("");
+  useEffect(() => {
+    let alive = true;
+    get<Timeline>(`/api/leads/${leadId}/timeline`)
+      .then((r) => alive && setData(r))
+      .catch((e) => alive && setErr((e as Error).message));
+    return () => { alive = false; };
+  }, [leadId]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/50" onClick={onClose}>
+      <div className="h-full w-full max-w-md overflow-y-auto border-l border-white/10 bg-[#0b1530] p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-5 flex items-center justify-between">
+          <h2 className="text-lg font-black">Contact timeline</h2>
+          <button onClick={onClose} className="text-white/50 hover:text-white">✕</button>
+        </div>
+        {err && <p className="text-rose-300">{err}</p>}
+        {!data && !err && <p className="text-white/50">Loading…</p>}
+        {data && (
+          <>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              <p className="text-base font-bold">{data.contact.name || "Unknown"}</p>
+              <div className="mt-1 space-y-0.5 text-sm text-white/55">
+                {data.contact.phone && <p>{data.contact.phone}</p>}
+                {data.contact.email && <p>{data.contact.email}</p>}
+                {data.contact.address && <p>{data.contact.address}</p>}
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-wider">
+                {data.contact.verifiedAt && <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-emerald-300 ring-1 ring-emerald-400/30">Verified</span>}
+                {data.contact.hasAccount && <span className="rounded-full bg-violet-500/15 px-2 py-0.5 text-violet-300 ring-1 ring-violet-400/30">Account</span>}
+              </div>
+            </div>
+
+            <h3 className="mb-2 mt-6 text-xs font-bold uppercase tracking-wider text-white/50">Leads ({data.leads.length})</h3>
+            <div className="space-y-2">
+              {data.leads.map((l) => (
+                <div key={l.id} className="rounded-xl border border-white/10 bg-white/[0.02] p-3 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold">{l.service || "—"}{l.severity ? ` · ${l.severity}` : ""}</span>
+                    <span className="text-xs text-white/40">{timeAgo(l.createdAt)}</span>
+                  </div>
+                  <div className="mt-1 flex items-center gap-2 text-xs text-white/50">
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ring-1 ${TIER_STYLE[l.scoreTier ?? "cold"]}`}>
+                      {(l.scoreTier ?? "cold")} · {l.score ?? 0}
+                    </span>
+                    <span>{l.status}</span>
+                    {l.areaSqft ? <span>· {l.areaSqft} sqft</span> : null}
+                  </div>
+                  {l.utm?.notes && <p className="mt-1 text-xs text-white/40">{l.utm.notes}</p>}
+                </div>
+              ))}
+            </div>
+
+            <h3 className="mb-2 mt-6 text-xs font-bold uppercase tracking-wider text-white/50">Activity ({data.events.length})</h3>
+            <div className="space-y-1.5">
+              {data.events.length === 0 && <p className="text-sm text-white/30">No tracked activity yet.</p>}
+              {data.events.map((ev) => (
+                <div key={ev.id} className="flex items-center justify-between gap-2 text-sm">
+                  <span className="text-white/70">{EVENT_LABEL[ev.type] ?? ev.type}</span>
+                  <span className="shrink-0 text-xs text-white/35">{timeAgo(ev.createdAt)}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function LeadsBoard() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [openId, setOpenId] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -149,7 +240,7 @@ export function LeadsBoard() {
             </div>
             <div className="space-y-2">
               {(byStatus[s.key] ?? []).map((l) => (
-                <LeadCard key={l.id} lead={l} onStatus={changeStatus} />
+                <LeadCard key={l.id} lead={l} onStatus={changeStatus} onOpen={setOpenId} />
               ))}
               {(byStatus[s.key]?.length ?? 0) === 0 && (
                 <p className="px-1 py-3 text-center text-xs text-white/20">—</p>
@@ -165,12 +256,14 @@ export function LeadsBoard() {
             </div>
             <div className="space-y-2">
               {other.map((l) => (
-                <LeadCard key={l.id} lead={l} onStatus={changeStatus} />
+                <LeadCard key={l.id} lead={l} onStatus={changeStatus} onOpen={setOpenId} />
               ))}
             </div>
           </div>
         )}
       </div>
+
+      {openId && <TimelineDrawer leadId={openId} onClose={() => setOpenId(null)} />}
     </div>
   );
 }

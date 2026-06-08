@@ -4,6 +4,7 @@ import { cors } from "hono/cors";
 import { pricingRoutes } from "./routes/pricing";
 import { authRoutes } from "./auth/routes";
 import { leadRoutes } from "./routes/leads";
+import { eventRoutes } from "./routes/events";
 
 // Fail closed in production: never run with a missing/weak signing secret or
 // an unset app origin (CORS would otherwise fall back to localhost).
@@ -34,6 +35,7 @@ app.get("/health", (c) => c.json({ ok: true, service: "wpx-api", ts: Date.now() 
 app.route("/api/auth", authRoutes);
 app.route("/api/pricing", pricingRoutes);
 app.route("/api/leads", leadRoutes);
+app.route("/api/events", eventRoutes);
 
 const port = Number(process.env.PORT ?? 8787);
 serve({ fetch: app.fetch, port }, (info) => {
