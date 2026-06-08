@@ -10,6 +10,7 @@ import { ToolsConfigEditor } from "./ToolsConfig";
 import { CrewBoard } from "./CrewBoard";
 import { ScheduleBoard } from "./ScheduleBoard";
 import { JobsBoard } from "./JobsBoard";
+import { QuotesBoard } from "./QuotesBoard";
 
 const clientNav: NavItem[] = [
   { to: "/portal", label: "Overview" },
@@ -22,6 +23,8 @@ export function ClientDashboard() {
     <DashboardShell title="My account" nav={clientNav}>
       <h1 className="text-2xl font-black mb-6">Your requests & activity</h1>
       <MyRequests />
+      <h2 className="mb-4 mt-10 text-xl font-black">Your quotes</h2>
+      <QuotesBoard scope="mine" />
     </DashboardShell>
   );
 }
@@ -58,12 +61,12 @@ const adminNav: NavItem[] = [
   { to: "/admin", label: "Settings" },
 ];
 export function AdminDashboard() {
-  const [tab, setTab] = useState<"leads" | "schedule" | "jobs">("leads");
-  const label: Record<string, string> = { leads: "Lead pipeline", schedule: "Site visits", jobs: "Jobs" };
+  const [tab, setTab] = useState<"leads" | "schedule" | "quotes" | "jobs">("leads");
+  const label: Record<string, string> = { leads: "Lead pipeline", schedule: "Site visits", quotes: "Quotes", jobs: "Jobs" };
   return (
     <DashboardShell title="Admin" nav={adminNav}>
-      <div className="mb-6 flex items-center gap-2">
-        {(["leads", "schedule", "jobs"] as const).map((t) => (
+      <div className="mb-6 flex flex-wrap items-center gap-2">
+        {(["leads", "schedule", "quotes", "jobs"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -75,7 +78,7 @@ export function AdminDashboard() {
           </button>
         ))}
       </div>
-      {tab === "leads" ? <LeadsBoard /> : tab === "schedule" ? <ScheduleBoard /> : <JobsBoard scope="all" />}
+      {tab === "leads" ? <LeadsBoard /> : tab === "schedule" ? <ScheduleBoard /> : tab === "quotes" ? <QuotesBoard scope="all" /> : <JobsBoard scope="all" />}
     </DashboardShell>
   );
 }

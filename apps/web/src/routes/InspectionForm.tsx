@@ -75,12 +75,12 @@ export function InspectionForm({ apptId, onClose }: { apptId: string; onClose: (
     }
   }
 
-  async function createJob() {
+  async function generateQuote() {
     if (!data) return;
     setSaving(true); setError(""); setJobMsg("");
     try {
-      const r = await post<{ jobId: string; existed?: boolean }>(`/api/jobs/from-inspection/${data.inspection.id}`, {});
-      setJobMsg(r.existed ? "Job already exists ✓" : "Job created ✓ — see the Jobs tab");
+      const r = await post<{ quote: { number: string | null }; existed?: boolean }>(`/api/quotes/from-inspection/${data.inspection.id}`, {});
+      setJobMsg(r.existed ? `Quote ${r.quote.number} already exists ✓` : `Quote ${r.quote.number} created ✓ — see the Quotes tab to send`);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -154,8 +154,8 @@ export function InspectionForm({ apptId, onClose }: { apptId: string; onClose: (
                 Submit report
               </button>
               {isStaff && (
-                <button onClick={createJob} disabled={saving} className="rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-emerald-600 disabled:opacity-50">
-                  Create job
+                <button onClick={generateQuote} disabled={saving} className="rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-emerald-600 disabled:opacity-50">
+                  Generate quote
                 </button>
               )}
               {savedMsg && <span className="text-sm font-semibold text-emerald-300">{savedMsg}</span>}
