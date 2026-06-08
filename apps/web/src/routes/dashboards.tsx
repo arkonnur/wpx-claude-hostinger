@@ -7,6 +7,7 @@ import { MyRequests } from "./MyRequests";
 import { PricingConfigEditor } from "./PricingConfig";
 import { CrewBoard } from "./CrewBoard";
 import { ScheduleBoard } from "./ScheduleBoard";
+import { JobsBoard } from "./JobsBoard";
 
 const clientNav: NavItem[] = [
   { to: "/portal", label: "Overview" },
@@ -29,11 +30,18 @@ const crewNav: NavItem[] = [
   { to: "/crew", label: "Jobs" },
 ];
 export function EmployeeDashboard() {
+  const [tab, setTab] = useState<"visits" | "jobs">("visits");
   return (
     <DashboardShell title="Field crew" nav={crewNav}>
-      <h1 className="text-2xl font-black mb-1">My site visits</h1>
-      <p className="mb-6 text-sm text-white/45">Your assigned inspections. Confirm, start, and close out each visit.</p>
-      <CrewBoard />
+      <div className="mb-6 flex items-center gap-2">
+        {(["visits", "jobs"] as const).map((t) => (
+          <button key={t} onClick={() => setTab(t)}
+            className={`rounded-xl px-4 py-2 text-sm font-bold capitalize ${tab === t ? "bg-blue-500 text-white" : "border border-white/10 text-white/55 hover:bg-white/5"}`}>
+            {t === "visits" ? "Site visits" : "Jobs"}
+          </button>
+        ))}
+      </div>
+      {tab === "visits" ? <CrewBoard /> : <JobsBoard scope="mine" />}
     </DashboardShell>
   );
 }
@@ -48,23 +56,24 @@ const adminNav: NavItem[] = [
   { to: "/admin", label: "Settings" },
 ];
 export function AdminDashboard() {
-  const [tab, setTab] = useState<"leads" | "schedule">("leads");
+  const [tab, setTab] = useState<"leads" | "schedule" | "jobs">("leads");
+  const label: Record<string, string> = { leads: "Lead pipeline", schedule: "Site visits", jobs: "Jobs" };
   return (
     <DashboardShell title="Admin" nav={adminNav}>
       <div className="mb-6 flex items-center gap-2">
-        {(["leads", "schedule"] as const).map((t) => (
+        {(["leads", "schedule", "jobs"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`rounded-xl px-4 py-2 text-sm font-bold capitalize ${
+            className={`rounded-xl px-4 py-2 text-sm font-bold ${
               tab === t ? "bg-blue-500 text-white" : "border border-white/10 text-white/55 hover:bg-white/5"
             }`}
           >
-            {t === "leads" ? "Lead pipeline" : "Site visits"}
+            {label[t]}
           </button>
         ))}
       </div>
-      {tab === "leads" ? <LeadsBoard /> : <ScheduleBoard />}
+      {tab === "leads" ? <LeadsBoard /> : tab === "schedule" ? <ScheduleBoard /> : <JobsBoard scope="all" />}
     </DashboardShell>
   );
 }

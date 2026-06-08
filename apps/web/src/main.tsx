@@ -22,6 +22,7 @@ import { BookVisit } from "./tools/BookVisit";
 import { WarrantyLookup } from "./tools/WarrantyLookup";
 import { HealthReport } from "./tools/HealthReport";
 import { ToolShell } from "./tools/ToolShell";
+import { WarrantyVerify } from "./routes/WarrantyVerify";
 
 function HeaderAuth() {
   const { role, name, loading } = useSession();
@@ -104,6 +105,15 @@ const bookRoute = tool("/book", BookVisit);
 const warrantyRoute = tool("/warranty", WarrantyLookup);
 const reportRoute = tool("/report", HealthReport);
 
+const verifyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/verify/$token",
+  component: function VerifyPage() {
+    const { token } = verifyRoute.useParams();
+    return <WarrantyVerify token={token} />;
+  },
+});
+
 const guarded = (path: string, allow: Role[], Comp: () => ReactNode) =>
   createRoute({
     getParentRoute: () => rootRoute,
@@ -126,6 +136,7 @@ const router = createRouter({
     bookRoute,
     warrantyRoute,
     reportRoute,
+    verifyRoute,
     portalRoute,
     crewRoute,
     adminRoute,

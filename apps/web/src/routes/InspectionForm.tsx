@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { get, post, patch } from "../lib/api";
+import { useSession } from "../lib/session";
 
 interface Finding { zone?: string; issue?: string; severity?: string; note?: string }
 interface Insp {
@@ -17,6 +18,9 @@ const SEVERITIES = ["minor", "moderate", "severe", "critical"];
 
 /** On-site inspection capture, opened from a crew visit. Get-or-creates by appointment. */
 export function InspectionForm({ apptId, onClose }: { apptId: string; onClose: () => void }) {
+  const { role } = useSession();
+  const isStaff = role === "admin" || role === "owner";
+  const [jobMsg, setJobMsg] = useState("");
   const [data, setData] = useState<Loaded | null>(null);
   const [findings, setFindings] = useState<Finding[]>([]);
   const [summary, setSummary] = useState("");
@@ -64,6 +68,19 @@ export function InspectionForm({ apptId, onClose }: { apptId: string; onClose: (
       });
       setSavedMsg(markReady ? "Report submitted ✓" : "Saved ✓");
       if (markReady) setTimeout(onClose, 800);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function createJob() {
+    if (!data) return;
+    setSaving(true); setError(""); setJobMsg("");
+    try {
+      const r = await post<{ jobId: string; existed?: boolean }>(`/api/jobs/from-inspection/${data.inspection.id}`, {});
+      setJobMsg(r.existed ? "Job already exists ✓" : "Job created ✓ — see the Jobs tab");
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -136,7 +153,13 @@ export function InspectionForm({ apptId, onClose }: { apptId: string; onClose: (
               <button onClick={() => save(true)} disabled={saving} className="rounded-xl bg-blue-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-600 disabled:opacity-50">
                 Submit report
               </button>
+              {isStaff && (
+                <button onClick={createJob} disabled={saving} className="rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-emerald-600 disabled:opacity-50">
+                  Create job
+                </button>
+              )}
               {savedMsg && <span className="text-sm font-semibold text-emerald-300">{savedMsg}</span>}
+              {jobMsg && <span className="text-sm font-semibold text-emerald-300">{jobMsg}</span>}
               {error && <span className="text-sm font-semibold text-rose-300">{error}</span>}
             </div>
           </div>

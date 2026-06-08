@@ -9,6 +9,8 @@ import { diagnoseRoutes } from "./routes/diagnose";
 import { configRoutes } from "./routes/config";
 import { appointmentRoutes } from "./routes/appointments";
 import { inspectionRoutes } from "./routes/inspections";
+import { jobRoutes } from "./routes/jobs";
+import { warrantyRoutes } from "./routes/warranty";
 
 // Fail closed in production: never run with a missing/weak signing secret or
 // an unset app origin (CORS would otherwise fall back to localhost).
@@ -44,6 +46,8 @@ app.route("/api/diagnose", diagnoseRoutes);
 app.route("/api/config", configRoutes);
 app.route("/api/appointments", appointmentRoutes);
 app.route("/api/inspections", inspectionRoutes);
+app.route("/api/jobs", jobRoutes);
+app.route("/api/warranty", warrantyRoutes);
 
 const port = Number(process.env.PORT ?? 8787);
 serve({ fetch: app.fetch, port }, (info) => {
