@@ -130,6 +130,32 @@ authRoutes.post("/register", async (c) => {
 });
 
 /**
+ * Reset password — requires a fresh verified-phone cookie (proves OTP ownership)
+ * AND that the phone matches the account's email. No SMTP needed: identity is
+ * proven by the SMS OTP the client just completed. Logs the user in on success.
+ */
+authRoutes.post("/reset-password", async (c) => {
+  const body = await c.req.json<{ email: string; phone: string; password: string }>();
+  const e164 = normalizePhone(body.phone);
+  if (!e164) return c.json({ error: "bad_phone" }, 400);
+  if (!body.password || body.password.length < 8) return c.json({ error: "weak_password" }, 400);
+
+  const v = await getVerified(c);
+  if (!v || v.phoneHash !== hashPhone(e164)) return c.json({ error: "verification_required" }, 401);
+
+  const user = await repo.findUserByEmail(body.email);
+  // Generic failure: do not reveal whether the email exists or the phone differs.
+  if (!user || user.phone !== e164) return c.json({ error: "reset_failed" }, 400);
+
+  await repo.setUserPassword(user.id, await hashPassword(body.password));
+  const m = await repo.primaryMembership(user.id);
+  if (!m) return c.json({ error: "no_membership" }, 403);
+  const token = await signSession({ userId: user.id, contactId: user.contactId ?? "", tenantId: m.tenantId, role: m.role });
+  setSessionCookie(c, token);
+  return c.json({ ok: true, role: m.role });
+});
+
+/**
  * Login (email+password). OTP is required only as step-up: if the verified
  * cookie is valid for this account's phone, skip it; else respond needs_otp.
  */

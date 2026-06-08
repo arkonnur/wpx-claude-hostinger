@@ -4,11 +4,11 @@
 import { useRef, useState } from "react";
 import { X, Loader2, ShieldCheck } from "lucide-react";
 import { ApiError } from "../lib/api";
-import { sendOtp, verifyOtp, register, login } from "../lib/auth";
+import { sendOtp, verifyOtp, register, login, resetPassword } from "../lib/auth";
 import { useSession } from "../lib/session";
 
-type Mode = "signin" | "signup";
-type Sub = "form" | "otp";
+type Mode = "signin" | "signup" | "reset";
+type Sub = "form" | "otp" | "newpass";
 
 export function AuthDialog({ onClose }: { onClose: () => void }) {
   const { refresh } = useSession();
@@ -95,6 +95,29 @@ export function AuthDialog({ onClose }: { onClose: () => void }) {
       await finish();
     });
 
+  // ---- Forgot / reset password ----
+  const submitReset = () =>
+    run(async () => {
+      if (!email) throw new Error("Enter your email.");
+      if (!phone) throw new Error("Enter your registered mobile number.");
+      await sendOtp(phone, { honeypot: honeypot.current, formFillMs: Date.now() - renderedAt.current });
+      setSub("otp");
+    });
+
+  const submitResetOtp = () =>
+    run(async () => {
+      await verifyOtp(phone, code); // proves phone ownership → verified cookie
+      setSub("newpass");
+    });
+
+  const submitNewPassword = () =>
+    run(async () => {
+      if (password.length < 8) throw new Error("Password must be at least 8 characters.");
+      if (password !== confirm) throw new Error("Passwords do not match.");
+      await resetPassword({ email, phone, password });
+      await finish();
+    });
+
   const switchMode = (m: Mode) => {
     setMode(m);
     setSub("form");
@@ -130,7 +153,7 @@ export function AuthDialog({ onClose }: { onClose: () => void }) {
           aria-hidden
         />
 
-        {sub === "form" && (
+        {sub === "form" && mode !== "reset" && (
           <div className="flex gap-1 rounded-xl bg-white/5 p-1">
             <button className={tab(mode === "signin")} onClick={() => switchMode("signin")}>Sign in</button>
             <button className={tab(mode === "signup")} onClick={() => switchMode("signup")}>Create account</button>
@@ -145,7 +168,9 @@ export function AuthDialog({ onClose }: { onClose: () => void }) {
             <button className={primary} disabled={busy} onClick={submitSignin}>
               {busy && <Loader2 size={15} className="animate-spin" />} Sign in
             </button>
-            <p className="text-[11px] text-white/30 text-center">New here? Use “Create account”.</p>
+            <button onClick={() => switchMode("reset")} className="w-full text-center text-[12px] text-blue-300 hover:text-blue-200">
+              Forgot password?
+            </button>
           </>
         )}
 
@@ -179,6 +204,42 @@ export function AuthDialog({ onClose }: { onClose: () => void }) {
             <input className={field} placeholder="······" maxLength={6} inputMode="numeric" value={code} onChange={(e) => setCode(e.target.value)} />
             <button className={primary} disabled={busy} onClick={submitSignupOtp}>
               {busy && <Loader2 size={15} className="animate-spin" />} Verify & create account
+            </button>
+          </>
+        )}
+
+        {/* ---- RESET PASSWORD ---- */}
+        {mode === "reset" && sub === "form" && (
+          <>
+            <p className="text-sm text-white/60">Reset your password — we’ll send an OTP to your registered mobile.</p>
+            <input className={field} placeholder="Email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <input className={field} placeholder="Registered mobile (10-digit)" inputMode="numeric" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            <button className={primary} disabled={busy} onClick={submitReset}>
+              {busy && <Loader2 size={15} className="animate-spin" />} Send OTP
+            </button>
+            <button onClick={() => switchMode("signin")} className="w-full text-center text-[12px] text-white/40 hover:text-white/70">
+              Back to sign in
+            </button>
+          </>
+        )}
+
+        {mode === "reset" && sub === "otp" && (
+          <>
+            <p className="text-sm text-white/60">Enter the 6-digit code sent to {phone}.</p>
+            <input className={field} placeholder="······" maxLength={6} inputMode="numeric" value={code} onChange={(e) => setCode(e.target.value)} />
+            <button className={primary} disabled={busy} onClick={submitResetOtp}>
+              {busy && <Loader2 size={15} className="animate-spin" />} Verify
+            </button>
+          </>
+        )}
+
+        {mode === "reset" && sub === "newpass" && (
+          <>
+            <p className="text-sm text-white/60">Set a new password for {email}.</p>
+            <input className={field} placeholder="New password (min 8 chars)" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <input className={field} placeholder="Re-enter new password" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+            <button className={primary} disabled={busy} onClick={submitNewPassword}>
+              {busy && <Loader2 size={15} className="animate-spin" />} Update password & sign in
             </button>
           </>
         )}

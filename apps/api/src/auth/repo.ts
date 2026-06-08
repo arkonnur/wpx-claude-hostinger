@@ -134,6 +134,9 @@ export async function createUser(opts: { email: string; passwordHash: string; na
   });
   return (await findUserByEmail(opts.email))!;
 }
+export async function setUserPassword(userId: string, passwordHash: string) {
+  await getDb().update(users).set({ passwordHash }).where(eq(users.id, userId));
+}
 export async function ensureMembership(userId: string, tenantId: string, role: Role) {
   const db = getDb();
   const rows = await db.select().from(memberships).where(and(eq(memberships.userId, userId), eq(memberships.tenantId, tenantId))).limit(1);
