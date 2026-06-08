@@ -23,3 +23,4 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 
 export const post = <T>(path: string, body: unknown) => request<T>("POST", path, body);
 export const get = <T>(path: string) => request<T>("GET", path);
+export const patch = <T>(path: string, body: unknown) => request<T>("PATCH", path, body);

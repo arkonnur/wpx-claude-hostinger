@@ -1,6 +1,7 @@
 // Role dashboard shells. Rich content (leads, jobs, MasterReport, config) lands
 // in Phases 4–8; these establish the role-scoped surfaces + navigation now.
 import { DashboardShell, Placeholder, type NavItem } from "../components/DashboardShell";
+import { LeadsBoard } from "./LeadsBoard";
 
 const clientNav: NavItem[] = [
   { to: "/portal", label: "Overview" },
@@ -51,12 +52,8 @@ const adminNav: NavItem[] = [
 export function AdminDashboard() {
   return (
     <DashboardShell title="Admin" nav={adminNav}>
-      <h1 className="text-2xl font-black mb-6">Operations</h1>
-      <div className="grid md:grid-cols-3 gap-4">
-        <Placeholder title="Lead pipeline" note="Kanban + scoring (Phase 6)." />
-        <Placeholder title="Client-360" note="Every client's full activity (Phase 6)." />
-        <Placeholder title="Quotes & jobs" note="Quote builder + job lifecycle (Phase 4/7)." />
-      </div>
+      <h1 className="text-2xl font-black mb-6">Lead pipeline</h1>
+      <LeadsBoard />
     </DashboardShell>
   );
 }

@@ -3,7 +3,11 @@
 import { sign, verify } from "hono/jwt";
 import type { VerifiedClaims, SessionClaims } from "@wpx/types";
 
-const secret = () => process.env.JWT_SECRET ?? "dev-secret";
+const secret = () => {
+  const s = process.env.JWT_SECRET;
+  if (!s) throw new Error("JWT_SECRET not set — refusing to sign/verify tokens");
+  return s;
+};
 const days = (n: number) => Math.floor(Date.now() / 1000) + n * 86400;
 
 export const VERIFIED_DAYS = Number(process.env.VERIFIED_COOKIE_DAYS ?? 90);

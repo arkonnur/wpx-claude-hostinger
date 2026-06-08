@@ -5,9 +5,29 @@ import { pricingRoutes } from "./routes/pricing";
 import { authRoutes } from "./auth/routes";
 import { leadRoutes } from "./routes/leads";
 
+// Fail closed in production: never run with a missing/weak signing secret or
+// an unset app origin (CORS would otherwise fall back to localhost).
+if (process.env.NODE_ENV === "production") {
+  if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+    throw new Error("JWT_SECRET must be set (>=32 chars) in production");
+  }
+  if (!process.env.APP_URL) {
+    throw new Error("APP_URL must be set in production");
+  }
+}
+
 const app = new Hono();
 
-app.use("*", cors({ origin: (process.env.APP_URL ?? "http://localhost:5173"), credentials: true }));
+const allowedOrigins = (process.env.APP_URL ?? "http://localhost:5173")
+  .split(",")
+  .map((o) => o.trim().replace(/\/$/, ""));
+app.use(
+  "*",
+  cors({
+    origin: (origin) => (allowedOrigins.includes(origin.replace(/\/$/, "")) ? origin : allowedOrigins[0]),
+    credentials: true,
+  }),
+);
 
 app.get("/health", (c) => c.json({ ok: true, service: "wpx-api", ts: Date.now() }));
 
