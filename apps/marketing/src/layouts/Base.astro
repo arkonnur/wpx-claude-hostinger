@@ -1,26 +1,70 @@
 ---
 import "../styles/global.css";
+import { SITE, SITE_NAME, LOCALE, OG_IMAGE } from "../data/site";
+
 interface Props {
   title: string;
   description: string;
   canonical?: string;
   jsonLd?: object[];
+  noindex?: boolean;
+  ogType?: string;
 }
-const { title, description, canonical = Astro.url.href, jsonLd = [] } = Astro.props;
+const {
+  title,
+  description,
+  canonical = new URL(Astro.url.pathname, SITE).href,
+  jsonLd = [],
+  noindex = false,
+  ogType = "website",
+} = Astro.props;
+const apiOrigin = "https://darkslategrey-stork-284669.hostingersite.com";
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en-IN">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#020617" />
+    <meta name="format-detection" content="telephone=no" />
+
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
+    <meta
+      name="robots"
+      content={noindex ? "noindex,nofollow" : "index,follow,max-image-preview:large,max-snippet:-1"}
+    />
+
+    <!-- Local SEO geo signals (Bengaluru) -->
+    <meta name="geo.region" content="IN-KA" />
+    <meta name="geo.placename" content="Bengaluru" />
+    <meta name="geo.position" content="12.9716;77.5946" />
+    <meta name="ICBM" content="12.9716, 77.5946" />
+
+    <!-- Open Graph -->
+    <meta property="og:site_name" content={SITE_NAME} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:type" content="website" />
-    <meta name="robots" content="index,follow" />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content={LOCALE} />
+    <meta property="og:image" content={OG_IMAGE} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={OG_IMAGE} />
+
+    <!-- Perf: warm up the API origin used by the embedded calculator island -->
+    <link rel="preconnect" href={apiOrigin} crossorigin />
+    <link rel="dns-prefetch" href={apiOrigin} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+
     {jsonLd.map((j) => (
       <script type="application/ld+json" set:html={JSON.stringify(j)} />
     ))}

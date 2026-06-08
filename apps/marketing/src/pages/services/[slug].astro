@@ -1,0 +1,155 @@
+---
+import Base from "../../layouts/Base.astro";
+import { BRAND, SERVICES_DETAIL } from "../../data/landing";
+import { SITE, organizationLd, breadcrumbLd } from "../../data/site";
+
+export function getStaticPaths() {
+  return SERVICES_DETAIL.map((s) => ({ params: { slug: s.slug }, props: { service: s } }));
+}
+
+const { service } = Astro.props;
+const s = service;
+const cityTitle = `${s.title} in Bangalore`;
+const title = `${cityTitle} | Cost, Process & 10-Year Warranty | WaterProofX`;
+const description = `${s.short} ${s.description} Indicative cost ${s.priceRange}. Free engineering inspection + AI photo diagnosis across Bangalore. 10-year written warranty.`;
+
+// Service-specific FAQ (AEO) — concrete, quotable answers per surface.
+const faqs = [
+  {
+    q: `How much does ${s.title.toLowerCase()} cost in Bangalore?`,
+    a: `${s.title} in Bangalore typically costs ${s.priceRange}, depending on area, severity and the system used. Use our free instant cost calculator or book a free on-site inspection for an exact quote.`,
+  },
+  {
+    q: `What does ${s.title.toLowerCase()} include?`,
+    a: `Our ${s.title.toLowerCase()} scope covers ${s.bullets.join(", ")}. Every job is backed by a written warranty and a QA-verified digital warranty card.`,
+  },
+  {
+    q: `Do you offer a warranty on ${s.title.toLowerCase()}?`,
+    a: `Yes. WaterProofX provides up to a ${BRAND.warranty} written warranty on eligible systems, plus free post-service support visits and a verifiable digital warranty card.`,
+  },
+];
+
+const jsonLd = [
+  organizationLd,
+  breadcrumbLd([
+    { name: "Home", path: "/" },
+    { name: "Services", path: "/#services" },
+    { name: s.title, path: `/services/${s.slug}` },
+  ]),
+  {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "@id": `${SITE}/services/${s.slug}#service`,
+    serviceType: s.title,
+    name: cityTitle,
+    description: s.description,
+    provider: { "@id": `${SITE}/#organization` },
+    areaServed: { "@type": "City", name: "Bengaluru" },
+    offers: { "@type": "Offer", priceCurrency: "INR", description: s.priceRange, url: `${SITE}/services/${s.slug}` },
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((f) => ({
+      "@type": "Question",
+      name: f.q,
+      acceptedAnswer: { "@type": "Answer", text: f.a },
+    })),
+  },
+];
+
+const others = SERVICES_DETAIL.filter((o) => o.slug !== s.slug);
+const canonical = new URL(`/services/${s.slug}`, SITE).href;
+---
+
+<Base title={title} description={description} canonical={canonical} jsonLd={jsonLd}>
+  <header class="sticky top-0 z-50 border-b border-white/10 backdrop-blur-md" style="background:rgba(2,6,23,0.72)">
+    <div class="mx-auto flex max-w-6xl items-center gap-6 px-6 py-4">
+      <a href="/" class="text-lg font-black tracking-tight">Water<span style="color:var(--wpx-accent)">ProofX</span></a>
+      <a href="/app" class="ml-auto rounded-xl bg-[#002bfa] px-4 py-2 text-sm font-bold text-white hover:bg-[#1d44ff]">Open app</a>
+    </div>
+  </header>
+
+  <!-- Breadcrumb -->
+  <nav class="mx-auto max-w-4xl px-6 pt-8 text-xs text-white/40" aria-label="Breadcrumb">
+    <a href="/" class="hover:text-white">Home</a> ›
+    <a href="/#services" class="hover:text-white">Services</a> ›
+    <span class="text-white/70">{s.title}</span>
+  </nav>
+
+  <!-- Hero -->
+  <section class="mx-auto max-w-4xl px-6 pb-10 pt-6">
+    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-[#60a5fa]">Waterproofing · Bangalore</p>
+    <h1 class="mt-3 text-3xl font-black tracking-tight sm:text-5xl">{cityTitle}</h1>
+    <p class="mt-4 max-w-2xl text-base leading-relaxed text-white/60">{s.description}</p>
+    <div class="mt-6 flex flex-wrap items-center gap-3">
+      <span class="rounded-full border border-[#002bfa]/30 bg-[#002bfa]/10 px-4 py-1.5 text-sm font-bold text-[#60a5fa]">{s.priceRange}</span>
+      <span class="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm text-white/70">{BRAND.warranty} warranty</span>
+      <span class="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm text-white/70">Free inspection</span>
+    </div>
+    <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+      <a href="/app/diagnose" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#002bfa] px-7 py-3.5 text-sm font-bold text-white hover:bg-[#1d44ff]">Free AI photo diagnosis →</a>
+      <a href="/app/calculator" class="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-7 py-3.5 text-sm font-semibold text-white hover:bg-white/10">Instant cost estimate</a>
+    </div>
+  </section>
+
+  <!-- What's included -->
+  <section class="mx-auto max-w-4xl px-6 py-10">
+    <h2 class="text-2xl font-black tracking-tight">What's included</h2>
+    <ul class="mt-6 grid gap-3 sm:grid-cols-2">
+      {s.bullets.map((b) => (
+        <li class="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-white/70">
+          <span class="mt-0.5 text-[#60a5fa]">✓</span> {b}
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <!-- FAQ -->
+  <section class="mx-auto max-w-4xl px-6 py-10">
+    <h2 class="text-2xl font-black tracking-tight">{s.title} — questions answered</h2>
+    <div class="mt-6 space-y-3">
+      {faqs.map((f, i) => (
+        <details class="group overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]" open={i === 0}>
+          <summary class="flex cursor-pointer items-center justify-between gap-4 px-5 py-4 font-semibold text-white marker:content-['']">
+            {f.q}
+            <span class="text-[#60a5fa] transition-transform group-open:rotate-45">+</span>
+          </summary>
+          <p class="px-5 pb-5 text-sm leading-relaxed text-white/55">{f.a}</p>
+        </details>
+      ))}
+    </div>
+  </section>
+
+  <!-- Other services (internal linking) -->
+  <section class="mx-auto max-w-4xl px-6 py-10">
+    <h2 class="text-2xl font-black tracking-tight">Other waterproofing services</h2>
+    <div class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {others.map((o) => (
+        <a href={`/services/${o.slug}`} class="rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition-all hover:-translate-y-1 hover:border-white/25">
+          <h3 class="text-sm font-bold text-white">{o.title}</h3>
+          <p class="mt-1 text-xs text-[#60a5fa]">{o.priceRange}</p>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="px-6 py-16" style="background:linear-gradient(180deg,#0b1530,#020617)">
+    <div class="mx-auto max-w-3xl text-center">
+      <h2 class="text-2xl font-black tracking-tight sm:text-3xl">Get your {s.title.toLowerCase()} quote</h2>
+      <p class="mx-auto mt-3 max-w-xl text-white/60">Free AI diagnosis, instant estimate, or a free on-site engineering inspection across Bangalore.</p>
+      <div class="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
+        <a href="/app/book" class="rounded-2xl bg-[#002bfa] px-8 py-4 text-base font-bold text-white hover:bg-[#1d44ff]">Book free inspection →</a>
+        <a href={`https://wa.me/${BRAND.whatsapp}`} class="rounded-2xl border border-white/15 bg-white/5 px-8 py-4 text-base font-semibold text-white hover:bg-white/10">Chat on WhatsApp</a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="border-t border-white/10 px-6 py-10" style="background:#020617">
+    <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 text-sm text-white/40 sm:flex-row">
+      <span class="font-black text-white/70">Water<span style="color:var(--wpx-accent)">ProofX</span></span>
+      <span>© 2026 WaterProofX · {s.title} in {BRAND.city}</span>
+    </div>
+  </footer>
+</Base>

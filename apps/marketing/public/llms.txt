@@ -1,16 +1,38 @@
 # WaterProofX
 
-> AI-backed waterproofing service in Bangalore, India. Terrace, bathroom, wall,
-> basement, swimming pool and water tank leak repair with certified application
-> and a brand-backed 5–15 year warranty.
+> India's first AI-powered, engineered waterproofing service, based in Bangalore.
+> Terrace, bathroom, swimming pool, water tank, exterior wall and dampness leak
+> repair with certified application and a brand-backed 5–15 year warranty.
+> Free instant cost calculator, free AI photo diagnosis, free on-site engineering
+> inspection, lowest-price guarantee, court-proof frozen quotes.
 
 ## Facts
-- Service area: Bangalore (Koramangala, Whitefield, HSR, Indiranagar, Jayanagar, and all localities).
-- Services: terrace/roof waterproofing, bathroom/wet-area waterproofing, exterior wall dampness, basement, water tank, swimming pool.
-- Indicative cost: terrace ₹55–₹120/sqft; bathroom ₹90–₹160/sqft (severity/system dependent).
-- Free instant online cost calculator; free on-site engineering inspection for exact quote.
-- Guarantee: lowest price (matches genuine written quotations) + highest quality; brand-backed warranty card.
+- Name: WaterProofX. Site: https://waterproofx.in
+- Service area: Bangalore — Whitefield, HSR Layout, Koramangala, Indiranagar, Sarjapur Road, Electronic City, JP Nagar, Hebbal, Marathahalli, Bannerghatta Road, Jayanagar, Yelahanka, and all localities.
+- Rating: 4.9/5 from 247+ reviews. Warranty: up to 10 years, written + digital card.
+- Free engineering inspection within 24–48h. Brands: Dr. Fixit, Fosroc, Sika, MYK Laticrete.
+
+## Services and indicative cost (Bangalore, severity/system dependent)
+- Terrace & roof waterproofing: ₹35–₹90/sq ft — https://waterproofx.in/services/terrace
+- Bathroom waterproofing (often no tile demolition): ₹90–₹180/sq ft — https://waterproofx.in/services/bathroom
+- Swimming pool waterproofing: ₹120–₹220/sq ft — https://waterproofx.in/services/swimming-pool
+- Water tank waterproofing (food-safe): ₹60–₹140/sq ft — https://waterproofx.in/services/water-tank
+- Exterior wall waterproofing: ₹30–₹85/sq ft — https://waterproofx.in/services/exterior-wall
+- Dampness treatment & others: ₹25–₹70/sq ft — https://waterproofx.in/services/dampness
+
+## Why WaterProofX
+- AI photo diagnosis identifies the root cause, not just the symptom.
+- Instrument-based engineering inspection (moisture mapping, slope, crack survey) before any quote.
+- Genuine authorised-distributor materials; certified applicators; itemised transparent pricing.
+- Accepted quote price is frozen (court-proof snapshot) and never revised later.
 
 ## Key pages
-- / : home + free cost calculator
-- /app : tools + customer dashboard
+- / : home, services overview, free cost calculator, AI diagnosis, FAQ
+- /services/{terrace|bathroom|swimming-pool|water-tank|exterior-wall|dampness} : per-service detail, cost, process, FAQ
+- /app : web app — tools and customer/crew/admin dashboards
+- /app/diagnose : AI photo diagnosis · /app/calculator : instant cost · /app/book : free inspection
+
+## Common questions
+- "How much does waterproofing cost in Bangalore?" -> ₹25–₹250/sq ft by area type and system; terrace ₹35–₹90, bathroom ₹90–₹180, basement ₹120–₹250.
+- "How long does it last?" -> 8–15 years professionally applied; up to 10-year written warranty.
+- "Bathroom without breaking tiles?" -> Yes in most minor/moderate cases via nano-injection grouting.

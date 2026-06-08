@@ -18,21 +18,28 @@ import {
   AI_FEATURES,
   AI_BULLETS,
 } from "../data/landing";
+import { SITE, organizationLd, websiteLd } from "../data/site";
 
 const title = "Waterproofing Services in Bangalore | WaterProofX";
 const description =
   "Bangalore's AI-backed waterproofing experts for terrace, bathroom, swimming pool, water tank, exterior wall & dampness treatment. Free instant cost calculator + AI photo diagnosis + on-site engineering inspection. 10-year warranty, lowest-price guarantee.";
 
-// SEO + AEO structured data — LocalBusiness + FAQPage (AI engines quote these).
+// SEO + AEO structured data — Organization + WebSite + LocalBusiness + FAQPage.
+// AI answer engines quote LocalBusiness + FAQPage; Organization/WebSite enable
+// brand knowledge panel + sitelinks.
 const jsonLd = [
+  organizationLd,
+  websiteLd,
   {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
+    "@id": `${SITE}/#localbusiness`,
     name: BRAND.name,
     description,
-    url: "https://waterproofx.in",
+    url: SITE,
     telephone: BRAND.phone,
     email: BRAND.email,
+    image: `${SITE}/og.jpg`,
     address: {
       "@type": "PostalAddress",
       streetAddress: "100ft Road, Indiranagar",
@@ -41,6 +48,7 @@ const jsonLd = [
       postalCode: "560038",
       addressCountry: "IN",
     },
+    geo: { "@type": "GeoCoordinates", latitude: 12.9716, longitude: 77.5946 },
     areaServed: AREAS.map((a) => a.name + ", Bangalore"),
     priceRange: "₹₹",
     aggregateRating: {
@@ -61,7 +69,8 @@ const jsonLd = [
       name: "Waterproofing Services",
       itemListElement: SERVICES_DETAIL.map((s) => ({
         "@type": "Offer",
-        itemOffered: { "@type": "Service", name: s.title },
+        url: `${SITE}/services/${s.slug}`,
+        itemOffered: { "@type": "Service", name: s.title, url: `${SITE}/services/${s.slug}` },
       })),
     },
   },
@@ -140,7 +149,9 @@ const navLinks = [
       <div class="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {SERVICES_DETAIL.map((s) => (
           <div class="group flex h-full flex-col rounded-3xl border border-white/10 bg-white/[0.03] p-7 transition-all hover:-translate-y-1 hover:border-white/25">
-            <h3 class="text-xl font-bold text-white">{s.title}</h3>
+            <h3 class="text-xl font-bold text-white">
+              <a href={`/services/${s.slug}`} class="hover:text-[#60a5fa]">{s.title}</a>
+            </h3>
             <p class="mt-1 text-sm font-semibold text-[#60a5fa]">{s.short}</p>
             <p class="mt-3 flex-1 text-sm leading-relaxed text-white/55">{s.description}</p>
             <ul class="mt-4 space-y-1.5">
@@ -152,8 +163,8 @@ const navLinks = [
             </ul>
             <div class="mt-5 flex items-center justify-between border-t border-white/10 pt-4">
               <span class="text-sm font-bold text-[#60a5fa]">{s.priceRange}</span>
-              <a href="/app/calculator" class="text-sm font-semibold text-white/70 hover:text-white">
-                Calculate →
+              <a href={`/services/${s.slug}`} class="text-sm font-semibold text-white/70 hover:text-white">
+                Details →
               </a>
             </div>
           </div>
