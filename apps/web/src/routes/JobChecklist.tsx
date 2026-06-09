@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
-import { get, post, patch } from "../lib/api";
+import { Camera, Loader2 } from "lucide-react";
+import { get, post, patch, apiUrl } from "../lib/api";
+import { uploadPhoto } from "../lib/upload";
 import { useSession } from "../lib/session";
 
 interface Item {
   id: string; zone: string; label: string; status: string;
   material: string | null; batchNo: string | null; quantity: string | null;
   coverage: string | null; crew: string | null; weather: string | null;
+  photos: string[] | null;
   qaVerified: boolean;
 }
 interface Warranty { cardNo: string; qrToken: string; years: number | null; brand: string | null; expiryDate: string | null }
@@ -35,6 +38,7 @@ export function JobChecklist({ jobId, onClose, onChange }: { jobId: string; onCl
   const [busy, setBusy] = useState<string | null>(null);
   const [years, setYears] = useState(5);
   const [brand, setBrand] = useState("");
+  const [upBusy, setUpBusy] = useState<string | null>(null);
 
   function load() {
     get<JobData>(`/api/jobs/${jobId}`)
@@ -59,6 +63,27 @@ export function JobChecklist({ jobId, onClose, onChange }: { jobId: string; onCl
     catch (e) { setError((e as Error).message); }
     finally { setBusy(null); }
   }
+  // Attach / detach site-evidence photos on a checklist item (locked once QA'd).
+  async function addPhoto(item: Item, file: File) {
+    setUpBusy(item.id); setError("");
+    try {
+      const url = await uploadPhoto(file);
+      const photos = [...(item.photos ?? []), url].slice(0, 12);
+      await patch(`/api/jobs/items/${item.id}`, { photos });
+      patchItemLocal(item.id, { photos });
+    } catch (e) { setError((e as Error).message); }
+    finally { setUpBusy(null); }
+  }
+  async function removePhoto(item: Item, url: string) {
+    setUpBusy(item.id); setError("");
+    const photos = (item.photos ?? []).filter((u) => u !== url);
+    try {
+      await patch(`/api/jobs/items/${item.id}`, { photos });
+      patchItemLocal(item.id, { photos });
+    } catch (e) { setError((e as Error).message); }
+    finally { setUpBusy(null); }
+  }
+
   async function issueWarranty() {
     setBusy("warranty"); setError("");
     try {
@@ -114,6 +139,39 @@ export function JobChecklist({ jobId, onClose, onChange }: { jobId: string; onCl
                       />
                     </label>
                   ))}
+                </div>
+
+                <div className="mt-3">
+                  <p className="mb-1.5 text-[10px] uppercase tracking-wider text-white/40">Site photos</p>
+                  <div className="flex flex-wrap gap-2">
+                    {(it.photos ?? []).map((u) => (
+                      <div key={u} className="relative">
+                        <img src={apiUrl(u)} alt="Site evidence" loading="lazy" className="h-16 w-16 rounded-lg object-cover ring-1 ring-white/10" />
+                        {!it.qaVerified && (
+                          <button
+                            type="button"
+                            aria-label="Remove photo"
+                            disabled={upBusy === it.id}
+                            onClick={() => removePhoto(it, u)}
+                            className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[11px] font-bold leading-none text-white hover:bg-rose-600 disabled:opacity-50"
+                          >×</button>
+                        )}
+                      </div>
+                    ))}
+                    {!it.qaVerified && (it.photos?.length ?? 0) < 12 && (
+                      <label className={`flex h-16 w-16 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-white/20 text-white/40 hover:border-blue-400/50 hover:text-white/70 ${upBusy === it.id ? "pointer-events-none opacity-50" : ""}`}>
+                        {upBusy === it.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Camera className="h-4 w-4" /><span className="text-[9px] font-semibold">Photo</span></>}
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          capture="environment"
+                          className="hidden"
+                          disabled={upBusy === it.id}
+                          onChange={(e) => { const f = e.target.files?.[0]; if (f) addPhoto(it, f); e.target.value = ""; }}
+                        />
+                      </label>
+                    )}
+                  </div>
                 </div>
 
                 <div className="mt-3 flex flex-wrap gap-2">

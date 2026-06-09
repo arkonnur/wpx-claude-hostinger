@@ -13,6 +13,7 @@ import { jobRoutes } from "./routes/jobs";
 import { warrantyRoutes } from "./routes/warranty";
 import { productRoutes } from "./routes/products";
 import { quoteRoutes } from "./routes/quotes";
+import { uploadRoutes } from "./routes/uploads";
 
 // Fail closed in production: never run with a missing/weak signing secret or
 // an unset app origin (CORS would otherwise fall back to localhost).
@@ -52,6 +53,7 @@ app.route("/api/jobs", jobRoutes);
 app.route("/api/warranty", warrantyRoutes);
 app.route("/api/products", productRoutes);
 app.route("/api/quotes", quoteRoutes);
+app.route("/api/uploads", uploadRoutes);
 
 const port = Number(process.env.PORT ?? 8787);
 serve({ fetch: app.fetch, port }, (info) => {
