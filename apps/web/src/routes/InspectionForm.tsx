@@ -102,7 +102,7 @@ export function InspectionForm({ apptId, onClose }: { apptId: string; onClose: (
         className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-t-3xl border border-white/10 bg-[#0a1228] p-6 sm:rounded-3xl"
         role="presentation"
         onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
+        onKeyDown={(e) => { if (e.key !== "Escape") e.stopPropagation(); }}
       >
         <div className="mb-4 flex items-start justify-between">
           <div>
