@@ -117,6 +117,10 @@ export async function findUserByEmail(email: string) {
   const rows = await getDb().select().from(users).where(eq(users.email, email)).limit(1);
   return rows[0] ?? null;
 }
+export async function findUserById(id: string) {
+  const rows = await getDb().select().from(users).where(eq(users.id, id)).limit(1);
+  return rows[0] ?? null;
+}
 export async function findUserByPhoneHash(phoneHash: string) {
   const c = await getDb().select().from(contacts).where(eq(contacts.phoneHash, phoneHash)).limit(1);
   if (!c[0]) return null;
@@ -129,6 +133,9 @@ export async function createUser(opts: { email: string; passwordHash: string; na
     email: opts.email, passwordHash: opts.passwordHash, name: opts.name, phone: opts.phone, contactId: opts.contactId,
   });
   return (await findUserByEmail(opts.email))!;
+}
+export async function setUserPassword(userId: string, passwordHash: string) {
+  await getDb().update(users).set({ passwordHash }).where(eq(users.id, userId));
 }
 export async function ensureMembership(userId: string, tenantId: string, role: Role) {
   const db = getDb();

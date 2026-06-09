@@ -3,6 +3,9 @@ import { getDeviceId } from "./device";
 
 const BASE = import.meta.env.VITE_API_BASE ?? "";
 
+/** Absolute URL for a server-served asset (e.g. uploaded photo) — same origin the API client uses. */
+export const apiUrl = (path: string) => `${BASE}${path}`;
+
 export class ApiError extends Error {
   constructor(public code: string, message: string, public status: number, public data?: any) {
     super(message);
@@ -23,3 +26,6 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 
 export const post = <T>(path: string, body: unknown) => request<T>("POST", path, body);
 export const get = <T>(path: string) => request<T>("GET", path);
+export const patch = <T>(path: string, body: unknown) => request<T>("PATCH", path, body);
+export const put = <T>(path: string, body: unknown) => request<T>("PUT", path, body);
+export const del = <T>(path: string) => request<T>("DELETE", path);

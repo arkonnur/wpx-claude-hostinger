@@ -2,7 +2,13 @@
 import { createHmac, randomBytes, createHash, timingSafeEqual } from "node:crypto";
 import bcrypt from "bcryptjs";
 
-const PHONE_SALT = () => process.env.JWT_SECRET ?? "dev-secret";
+// Phone-hash HMAC key. Defaults to JWT_SECRET to preserve existing hashes;
+// set PHONE_HASH_SALT to rotate independently (invalidates prior phoneHashes).
+const PHONE_SALT = () => {
+  const s = process.env.PHONE_HASH_SALT || process.env.JWT_SECRET;
+  if (!s) throw new Error("PHONE_HASH_SALT/JWT_SECRET not set — refusing to hash phones");
+  return s;
+};
 
 /** Normalize an Indian mobile to E.164 (+91XXXXXXXXXX). Returns null if invalid. */
 export function normalizePhone(raw: string): string | null {

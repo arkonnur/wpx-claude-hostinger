@@ -18,10 +18,14 @@ export const register = (data: { phone: string; email: string; password: string;
 export const login = (email: string, password: string) =>
   post<{ ok?: true; role?: Role; needs_otp?: boolean; phone?: string }>("/api/auth/login", { email, password });
 
+export const resetPassword = (data: { email: string; phone: string; password: string }) =>
+  post<{ ok: true; role: Role }>("/api/auth/reset-password", data);
+
 export const logout = () => post<{ ok: true }>("/api/auth/logout", {});
 
 export interface Me {
   session: { userId: string; role: Role; tenantId: string; contactId: string } | null;
+  user: { name: string | null; email: string | null } | null;
   verified: { contactId: string; scope: string } | null;
 }
 export const me = () => get<Me>("/api/auth/me");
