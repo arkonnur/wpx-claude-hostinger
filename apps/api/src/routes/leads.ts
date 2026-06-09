@@ -181,7 +181,8 @@ leadRoutes.post("/", async (c) => {
       areaSqft,
       source: clip(body.source, MAX.source) ?? "website",
       // utm doubles as a meta catch-all until dedicated columns exist (notes/locality).
-      utm: notes ? { notes } : null,
+      // Merge note metadata into caller-supplied utm so campaign attribution survives.
+      utm: body.utm || notes ? { ...(body.utm ?? {}), ...(notes ? { notes } : {}) } : null,
       score,
       scoreTier: tier,
       status: hasAppt ? "site_visit_scheduled" : "new",

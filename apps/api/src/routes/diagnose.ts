@@ -97,9 +97,14 @@ diagnoseRoutes.post("/", requireVerified, async (c) => {
 
   if (cached[0]) {
     if (cached[0].rejected) {
-      // re-uploading known junk = abuse
-      const pen = await strikeAndMaybeBan("duplicate_image", ip, dev, phoneHash);
-      return c.json({ error: "rejected", reason: "irrelevant", strike: pen.strikeCount }, 422);
+      // Only strike the contact that earned the rejection. A different verified
+      // user uploading the same image gets a plain rejection, not a strike —
+      // one bad image can't poison the hash for the whole tenant.
+      if (cached[0].contactId === contactId) {
+        const pen = await strikeAndMaybeBan("duplicate_image", ip, dev, phoneHash);
+        return c.json({ error: "rejected", reason: "irrelevant", strike: pen.strikeCount }, 422);
+      }
+      return c.json({ error: "rejected", reason: "irrelevant" }, 422);
     }
     return c.json({ ok: true, cached: true, diagnosis: cached[0].result });
   }

@@ -53,6 +53,7 @@ export function AuthDialog({ onClose }: { onClose: () => void }) {
       if (res.needs_otp) {
         // New device / expired trust → one-time OTP step-up.
         const p = res.phone ?? phone;
+        if (!p) throw new Error("Couldn't start verification. Please use your registered mobile number.");
         setPhone(p);
         await sendOtp(p, { formFillMs: 9999 });
         setSub("otp");

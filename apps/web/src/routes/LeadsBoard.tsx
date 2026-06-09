@@ -112,6 +112,7 @@ function TimelineDrawer({ leadId, onClose }: { leadId: string; onClose: () => vo
   const [err, setErr] = useState("");
   useEffect(() => {
     let alive = true;
+    setData(null); setErr("");
     get<Timeline>(`/api/leads/${leadId}/timeline`)
       .then((r) => alive && setData(r))
       .catch((e) => alive && setErr((e as Error).message));
@@ -183,6 +184,7 @@ export function LeadsBoard() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [mutErr, setMutErr] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -198,6 +200,7 @@ export function LeadsBoard() {
 
   async function changeStatus(id: string, status: string) {
     const prevStatus = leads.find((l) => l.id === id)?.status;
+    setMutErr("");
     setLeads((ls) => ls.map((l) => (l.id === id ? { ...l, status } : l))); // optimistic
     try {
       await patch(`/api/leads/${id}`, { status });
@@ -206,7 +209,8 @@ export function LeadsBoard() {
       if (prevStatus !== undefined) {
         setLeads((ls) => ls.map((l) => (l.id === id ? { ...l, status: prevStatus } : l)));
       }
-      setError((e as Error).message);
+      // Non-blocking: a failed PATCH must not blank the whole board.
+      setMutErr((e as Error).message);
     }
   }
 
@@ -222,10 +226,11 @@ export function LeadsBoard() {
   const hot = leads.filter((l) => l.scoreTier === "hot").length;
 
   if (loading) return <p className="text-white/50">Loading leads…</p>;
-  if (error) return <p className="font-semibold text-rose-300">Error: {error}</p>;
+  if (error && !leads.length) return <p className="font-semibold text-rose-300">Error: {error}</p>;
 
   return (
     <div>
+      {mutErr && <p className="mb-3 text-sm font-semibold text-rose-300">Couldn't update: {mutErr}</p>}
       <div className="mb-5 flex flex-wrap items-center gap-3 text-sm">
         <span className="rounded-full bg-white/5 px-3 py-1 font-semibold">{leads.length} leads</span>
         <span className="rounded-full bg-rose-500/15 px-3 py-1 font-semibold text-rose-300">{hot} hot</span>

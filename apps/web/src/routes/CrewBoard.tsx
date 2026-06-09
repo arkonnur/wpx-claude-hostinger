@@ -82,10 +82,10 @@ export function CrewBoard() {
   if (loading) return <p className="text-white/50">Loading visits…</p>;
   if (error && !appts.length) return <p className="font-semibold text-rose-300">Error: {error}</p>;
 
-  const open = appts.filter((a) => a.status !== "completed" && a.status !== "cancelled");
+  const open = appts.filter((a) => a.status !== "completed" && a.status !== "cancelled" && a.status !== "no_show");
   const today = open.filter((a) => isToday(a.scheduledDate));
   const upcoming = open.filter((a) => !isToday(a.scheduledDate));
-  const done = appts.filter((a) => a.status === "completed" || a.status === "cancelled");
+  const done = appts.filter((a) => a.status === "completed" || a.status === "cancelled" || a.status === "no_show");
 
   const Card = (a: Appt) => (
     <div key={a.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">

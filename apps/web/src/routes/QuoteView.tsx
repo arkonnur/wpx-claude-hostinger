@@ -25,7 +25,7 @@ const esc = (s: string) => s.replace(/[&<>"]/g, (m) => ({ "&": "&amp;", "<": "&l
 /** Open a clean, branded print window — customer saves it as PDF from the browser. */
 function printQuote(q: Quote) {
   const rows = (q.lineItems ?? [])
-    .map((li) => `<tr><td>${esc(li.description)}</td><td class="r">${li.areaSqft} sqft</td><td class="r">₹${li.ratePerSqft}</td><td class="r">${inr(li.amount)}</td></tr>`)
+    .map((li) => `<tr><td>${esc(li.description)}</td><td class="r">${Number(li.areaSqft)} sqft</td><td class="r">₹${Number(li.ratePerSqft)}</td><td class="r">${inr(li.amount)}</td></tr>`)
     .join("");
   const valid = q.validUntil ? `Valid until ${new Date(q.validUntil).toLocaleDateString("en-IN")}` : "Draft";
   const html = `<!doctype html><html><head><meta charset="utf-8"><title>Quote ${esc(q.number ?? "")}</title>

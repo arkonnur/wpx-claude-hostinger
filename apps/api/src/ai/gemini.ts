@@ -72,6 +72,8 @@ export function geminiKey(): string | null {
 }
 
 /** Single attempt against one model. Returns the parsed diagnosis or throws. */
+const GEMINI_TIMEOUT_MS = 12_000;
+
 async function callOnce(model: string, key: string, base64: string, mime: string): Promise<PhotoDiagnosis> {
   const body = {
     contents: [{
@@ -87,11 +89,24 @@ async function callOnce(model: string, key: string, base64: string, mime: string
     },
   };
 
-  const res = await fetch(ENDPOINT(model, key), {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
+  let res: Response;
+  try {
+    res = await fetch(ENDPOINT(model, key), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+  } catch (e) {
+    // AbortError (timeout) or network failure → treat as retryable 503.
+    const err = new Error(`gemini ${model} ${(e as Error)?.name === "AbortError" ? "timeout" : "network_error"}`);
+    (err as { status?: number }).status = 503;
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!res.ok) {
     const detail = await res.text().catch(() => "");

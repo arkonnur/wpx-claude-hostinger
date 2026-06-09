@@ -30,7 +30,10 @@ async function main() {
       throw new Error(`existing user phone does not match ADMIN_PHONE — refusing to promote`);
     }
     userId = existing.id;
-    console.warn(`[create-admin] PROMOTING existing user ${email} to owner`);
+    // Apply the supplied password too, so an OTP-only account (no passwordHash)
+    // can actually sign in with ADMIN_PASSWORD after promotion.
+    await repo.setUserPassword(userId, await hashPassword(pw));
+    console.warn(`[create-admin] PROMOTING existing user ${email} to owner (password reset applied)`);
   } else {
     const contact = await repo.getOrCreateContact(tenantId, e164, phoneHash);
     const user = await repo.createUser({

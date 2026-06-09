@@ -75,6 +75,12 @@ export async function saveToolConfigs(tenantId: string, input: unknown): Promise
     });
   }
 
+  // Enforce replacement semantics: omitted keys fall back to defaults so prior
+  // overrides never silently persist.
+  for (const k of TOOL_KEYS) {
+    if (!byKey.has(k)) byKey.set(k, DEFAULTS[k]);
+  }
+
   const db = getDb();
   const existing = await db.select({ id: toolConfigs.id, toolKey: toolConfigs.toolKey })
     .from(toolConfigs).where(eq(toolConfigs.tenantId, tenantId));

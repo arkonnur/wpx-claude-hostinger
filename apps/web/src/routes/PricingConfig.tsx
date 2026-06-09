@@ -30,20 +30,24 @@ export function PricingConfigEditor() {
     return () => { alive = false; };
   }, []);
 
+  const finite = (next: string, fallback: number) => {
+    const n = Number(next);
+    return Number.isFinite(n) ? n : fallback;
+  };
   function setBase(k: string, v: string) {
-    setCfg((c) => c && ({ ...c, baseRatePerSqft: { ...c.baseRatePerSqft, [k]: Number(v) } }));
+    setCfg((c) => c && ({ ...c, baseRatePerSqft: { ...c.baseRatePerSqft, [k]: finite(v, c.baseRatePerSqft[k] ?? 0) } }));
     setSaved(false);
   }
   function setSev(k: string, v: string) {
-    setCfg((c) => c && ({ ...c, severityMult: { ...c.severityMult, [k]: Number(v) } }));
+    setCfg((c) => c && ({ ...c, severityMult: { ...c.severityMult, [k]: finite(v, c.severityMult[k] ?? 0) } }));
     setSaved(false);
   }
   function setTier(k: string, v: string) {
-    setCfg((c) => c && ({ ...c, tierMult: { ...c.tierMult, [k]: Number(v) } }));
+    setCfg((c) => c && ({ ...c, tierMult: { ...c.tierMult, [k]: finite(v, c.tierMult[k] ?? 0) } }));
     setSaved(false);
   }
   function setNum(k: keyof Cfg, v: string) {
-    setCfg((c) => c && ({ ...c, [k]: Number(v) }));
+    setCfg((c) => c && ({ ...c, [k]: finite(v, (c[k] as number) ?? 0) }));
     setSaved(false);
   }
 

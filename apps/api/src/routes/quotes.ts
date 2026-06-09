@@ -64,12 +64,14 @@ quoteRoutes.post("/from-inspection/:inspectionId", requireRole("admin", "owner")
   const db = getDb();
 
   const ir = await db
-    .select({ id: inspections.id, leadId: inspections.leadId, readings: inspections.readings })
+    .select({ id: inspections.id, leadId: inspections.leadId, readings: inspections.readings, status: inspections.status })
     .from(inspections)
     .where(and(eq(inspections.id, inspectionId), eq(inspections.tenantId, s.tenantId)))
     .limit(1);
   const insp = ir[0];
   if (!insp) return c.json({ error: "not_found" }, 404);
+  // Only price a submitted report — never an incomplete inspection.
+  if (insp.status !== "report_ready") return c.json({ error: "inspection_not_ready" }, 409);
 
   const existing = await db.select().from(quotes)
     .where(and(eq(quotes.tenantId, s.tenantId), eq(quotes.inspectionId, inspectionId))).limit(1);
@@ -149,8 +151,9 @@ async function freezeIfNeeded(tenantId: string, q: typeof quotes.$inferSelect) {
   const db = getDb();
   const cfg = await loadPricingConfig(tenantId);
   const validUntil = new Date(Date.now() + VALID_DAYS * 24 * 60 * 60 * 1000);
+  const frozenAt = new Date();
   await db.update(quotes).set({
-    priceSnapshot: { lineItems: q.lineItems, subtotal: q.subtotal, gst: q.gst, total: q.total, frozenAt: validUntil.toISOString() },
+    priceSnapshot: { lineItems: q.lineItems, subtotal: q.subtotal, gst: q.gst, total: q.total, frozenAt: frozenAt.toISOString() },
     priceListVersion: cfg.version,
     formulaVersion: cfg.version,
     validUntil,
@@ -164,7 +167,10 @@ quoteRoutes.patch("/:id/status", requireRole("admin", "owner"), async (c) => {
   const id = c.req.param("id");
   const body = await c.req.json<{ status?: string }>().catch(() => null);
   const status = body?.status;
-  if (!status || !(QUOTE_STATUSES as readonly string[]).includes(status)) return c.json({ error: "bad_status" }, 400);
+  // "accepted" must go through POST /:id/accept (job + checklist seeding). This
+  // endpoint only handles lifecycle transitions that don't spawn a job.
+  const allowed = ["draft", "sent", "rejected", "expired"] as const;
+  if (!status || !(allowed as readonly string[]).includes(status)) return c.json({ error: "bad_status" }, 400);
 
   const db = getDb();
   const rows = await db.select().from(quotes).where(and(eq(quotes.id, id), eq(quotes.tenantId, s.tenantId))).limit(1);
@@ -190,6 +196,11 @@ quoteRoutes.post("/:id/accept", requireRole(), async (c) => {
 
   const isStaff = s.role === "admin" || s.role === "owner";
   if (!isStaff && q.contactId !== s.contactId) return c.json({ error: "forbidden" }, 403);
+  // Clients may only accept a live (sent) or already-accepted quote — never a
+  // draft/rejected/expired one.
+  if (!isStaff && q.status !== "sent" && q.status !== "accepted") {
+    return c.json({ error: "invalid_status" }, 409);
+  }
   if (q.validUntil && new Date(q.validUntil).getTime() < Date.now() && q.status !== "accepted") {
     return c.json({ error: "expired" }, 409);
   }

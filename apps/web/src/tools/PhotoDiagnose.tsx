@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ScanLine, Upload, Loader2, ImageOff, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { ToolShell } from "./ToolShell";
 import { post, ApiError } from "../lib/api";
@@ -56,8 +56,15 @@ export function PhotoDiagnose() {
   const [rejectMsg, setRejectMsg] = useState("");
   const [result, setResult] = useState<Diagnosis | null>(null);
 
+  // Revoke the blob URL when it changes / on unmount to avoid leaks.
+  useEffect(() => {
+    return () => { if (preview) URL.revokeObjectURL(preview); };
+  }, [preview]);
+
   function onFile(f: File) {
+    if (preview) URL.revokeObjectURL(preview);
     setError(""); setRejectMsg(""); setResult(null); setStage("idle");
+    setFile(null); setPreview(null);
     if (!OK_TYPES.includes(f.type)) return setError("Use a JPG, PNG or WEBP photo.");
     if (f.size > MAX_MB * 1024 * 1024) return setError(`Photo must be under ${MAX_MB} MB.`);
     setFile(f);

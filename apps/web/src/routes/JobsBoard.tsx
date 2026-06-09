@@ -29,6 +29,7 @@ export function JobsBoard({ scope }: { scope: "mine" | "all" }) {
   const [openId, setOpenId] = useState<string | null>(null);
 
   function load() {
+    setLoading(true); setError("");
     get<{ jobs: Job[] }>(scope === "mine" ? "/api/jobs/mine" : "/api/jobs")
       .then((r) => setJobs(r.jobs))
       .catch((e) => setError((e as Error).message))

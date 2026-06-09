@@ -147,9 +147,11 @@ authRoutes.post("/reset-password", async (c) => {
   // Generic failure: do not reveal whether the email exists or the phone differs.
   if (!user || user.phone !== e164) return c.json({ error: "reset_failed" }, 400);
 
-  await repo.setUserPassword(user.id, await hashPassword(body.password));
+  // Validate membership BEFORE mutating the password, so a failed reset never
+  // leaves the account with a rotated password and no session.
   const m = await repo.primaryMembership(user.id);
   if (!m) return c.json({ error: "no_membership" }, 403);
+  await repo.setUserPassword(user.id, await hashPassword(body.password));
   const token = await signSession({ userId: user.id, contactId: user.contactId ?? "", tenantId: m.tenantId, role: m.role });
   setSessionCookie(c, token);
   return c.json({ ok: true, role: m.role });

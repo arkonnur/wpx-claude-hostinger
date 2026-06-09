@@ -25,7 +25,8 @@ export function WarrantyVerify({ token }: { token: string }) {
 
   useEffect(() => {
     let alive = true;
-    get<Verify>(`/api/warranty/${token}`)
+    setLoading(true); setData(null);
+    get<Verify>(`/api/warranty/${encodeURIComponent(token)}`)
       .then((r) => alive && setData(r))
       .catch(() => alive && setData({ valid: false }))
       .finally(() => alive && setLoading(false));

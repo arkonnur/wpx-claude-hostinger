@@ -38,7 +38,9 @@ function toLocalInput(iso: string | null): string {
   return new Date(d.getTime() - off * 60000).toISOString().slice(0, 16);
 }
 function staffLabel(s: Staff): string {
-  return (s.name || s.email || s.userId.slice(0, 8)) + (s.roles.includes("employee") ? "" : ` (${s.roles[0]})`);
+  const base = s.name || s.email || s.userId.slice(0, 8);
+  const roleHint = s.roles[0];
+  return base + (s.roles.includes("employee") || !roleHint ? "" : ` (${roleHint})`);
 }
 
 export function ScheduleBoard() {

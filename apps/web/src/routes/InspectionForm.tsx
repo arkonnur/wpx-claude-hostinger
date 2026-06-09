@@ -79,6 +79,12 @@ export function InspectionForm({ apptId, onClose }: { apptId: string; onClose: (
     if (!data) return;
     setSaving(true); setError(""); setJobMsg("");
     try {
+      // Persist current in-form edits + submit the report first, so the quote
+      // prices from the latest findings (server reads stored readings).
+      const cleaned = findings.filter((f) => f.zone || f.issue || f.note);
+      await patch(`/api/inspections/${data.inspection.id}`, {
+        findings: cleaned, summary, recommendation, status: "report_ready",
+      });
       const r = await post<{ quote: { number: string | null }; existed?: boolean }>(`/api/quotes/from-inspection/${data.inspection.id}`, {});
       setJobMsg(r.existed ? `Quote ${r.quote.number} already exists ✓` : `Quote ${r.quote.number} created ✓ — see the Quotes tab to send`);
     } catch (e) {

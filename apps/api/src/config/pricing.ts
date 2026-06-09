@@ -63,8 +63,11 @@ export async function loadPricingConfig(tenantId: string): Promise<PricingConfig
 
 export async function savePricingConfig(tenantId: string, input: unknown): Promise<PricingConfig> {
   const cfg = sanitizeConfig(input);
-  // Stamp a fresh version so saved quotes can lock the exact rates used.
-  const stamped: PricingConfig = { ...cfg, version: `t-${tenantId.slice(0, 8)}-${cfg.version}` };
+  // Stamp a fresh, NON-chaining version so saved quotes can lock the exact rates.
+  // Strip any prior tenant stamp first so repeated saves don't re-prefix.
+  const baseVersion = cfg.version.replace(/^t-[^-]+-\d+-/, "").replace(/^t-[^-]+-/, "").slice(0, 24) || "v";
+  const freshVersion = `t-${tenantId.slice(0, 8)}-${Date.now()}-${baseVersion}`.slice(0, 64);
+  const stamped: PricingConfig = { ...cfg, version: freshVersion };
   const db = getDb();
   const existing = await db
     .select({ id: orgSettings.id })

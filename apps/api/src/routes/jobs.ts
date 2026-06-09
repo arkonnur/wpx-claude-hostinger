@@ -196,10 +196,11 @@ jobRoutes.patch("/items/:itemId/qa", requireRole("admin", "owner"), async (c) =>
   const s = await getSession(c);
   if (!s?.tenantId || !s.userId) return c.json({ error: "unauthenticated" }, 401);
   const itemId = c.req.param("itemId");
-  const body = await c.req.json<{ qaVerified?: boolean }>().catch(() => ({} as { qaVerified?: boolean }));
+  const body = await c.req.json<{ qaVerified?: boolean }>().catch(() => null);
+  if (!body || typeof body.qaVerified !== "boolean") return c.json({ error: "bad_body" }, 400);
   const db = getDb();
   const res = await db.update(executionItems)
-    .set({ qaVerified: body?.qaVerified !== false, qaBy: s.userId })
+    .set({ qaVerified: body.qaVerified, qaBy: s.userId })
     .where(and(eq(executionItems.id, itemId), eq(executionItems.tenantId, s.tenantId)));
   const affected = (res as unknown as { affectedRows?: number }[])[0]?.affectedRows ?? 0;
   if (!affected) return c.json({ error: "not_found" }, 404);

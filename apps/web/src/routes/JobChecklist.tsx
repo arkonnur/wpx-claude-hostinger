@@ -143,7 +143,7 @@ export function JobChecklist({ jobId, onClose, onChange }: { jobId: string; onCl
                   <div className="text-sm">
                     <p className="font-black text-emerald-300">{data.warranty.cardNo}</p>
                     <p className="text-xs text-white/45">{data.warranty.years} yr{data.warranty.brand ? ` · ${data.warranty.brand}` : ""}{data.warranty.expiryDate ? ` · expires ${new Date(data.warranty.expiryDate).toLocaleDateString("en-IN")}` : ""}</p>
-                    <p className="mt-1 break-all text-[10px] text-white/30">Verify: /warranty/{data.warranty.qrToken}</p>
+                    <p className="mt-1 break-all text-[10px] text-white/30">Verify: /verify/{data.warranty.qrToken}</p>
                   </div>
                 ) : (
                   <div className="flex flex-wrap items-end gap-3">

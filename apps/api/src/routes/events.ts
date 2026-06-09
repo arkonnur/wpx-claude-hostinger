@@ -58,8 +58,13 @@ eventRoutes.post("/", async (c) => {
 
   let payload: unknown = null;
   if (body.payload !== undefined && body.payload !== null) {
-    const json = JSON.stringify(body.payload);
-    if (json.length <= MAX_PAYLOAD_BYTES) payload = body.payload;
+    try {
+      const json = JSON.stringify(body.payload);
+      // Byte length, not char count; guard against circular refs / BigInt throws.
+      if (Buffer.byteLength(json, "utf8") <= MAX_PAYLOAD_BYTES) payload = body.payload;
+    } catch {
+      payload = null; // drop unserializable payloads silently
+    }
   }
   const sessionId = body.sessionId ? String(body.sessionId).slice(0, MAX_SESSION_LEN) : null;
 
