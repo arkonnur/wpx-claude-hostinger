@@ -120,8 +120,8 @@ function TimelineDrawer({ leadId, onClose }: { leadId: string; onClose: () => vo
   }, [leadId]);
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/50" onClick={onClose}>
-      <div className="h-full w-full max-w-md overflow-y-auto border-l border-white/10 bg-[#0b1530] p-6" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/50" role="presentation" onClick={onClose} onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}>
+      <div className="h-full w-full max-w-md overflow-y-auto border-l border-white/10 bg-[#0b1530] p-6" role="presentation" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-lg font-black">Contact timeline</h2>
           <button onClick={onClose} className="text-white/50 hover:text-white">✕</button>
